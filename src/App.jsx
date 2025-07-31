@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-// import './App.css'
-import { Plus, Trash2, Check, Pin, PinOff, Archive, List, Send, Shield, Settings, X, Eye, EyeOff, LoaderCircle } from 'lucide-react';
+import { Plus, Trash2, Check, Pin, PinOff, Archive, List, Send, Shield, Settings, X, Eye, EyeOff, LoaderCircle, Star, Grid, Flame } from 'lucide-react';
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -23,6 +22,9 @@ function App() {
   const [nsfwTags, setNsfwTags] = useState(''); // comma-separated string
   const [revealedNsfw, setRevealedNsfw] = useState({});
   const [pinMode, setPinMode] = useState('none');
+  const [isUrgent, setIsUrgent] = useState(false); // For new tasks
+  const [isImportant, setIsImportant] = useState(false); // For new tasks
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'matrix'
   const [editingTask, setEditingTask] = useState(null);
   const [editText, setEditText] = useState('');
   const textareaRef = useRef(null);
@@ -80,6 +82,9 @@ function App() {
   const generatePaletteFromHex = React.useCallback((baseHex) => {
     const { h, s, l } = hexToHSL(baseHex);
     const safeSat = Math.max(10, s); // Ensure there's some saturation for grayscale colors
+    const themeSat = Math.max(50, s); // Ensure colors are not too gray for matrix
+    const themeLight = 55; // A consistent lightness for these backgrounds
+    const themeAlpha = 0.1; // 10% opacity
 
     return {
       primary: baseHex,
@@ -118,6 +123,12 @@ function App() {
       buttonDangerHover: '#b91c1c',
       textDanger: '#b91c1c',
       borderDanger: '#fecaca',
+
+      // Matrix quadrant backgrounds
+      matrixDoBg: hslToCss(0, themeSat, themeLight, themeAlpha), // Red-ish
+      matrixScheduleBg: hslToCss(h, themeSat, themeLight, themeAlpha), // Theme color
+      matrixDelegateBg: hslToCss(39, themeSat, themeLight, themeAlpha), // Orange-ish
+      matrixEliminateBg: hslToCss(h, safeSat * 0.3, 94), // Muted gray-ish
     };
   }, []);
 
@@ -143,7 +154,7 @@ function App() {
     const initDB = async () => {
       try {
         const database = await new Promise((resolve, reject) => {
-          const request = indexedDB.open('TaskManager', 5); // Increment version
+          const request = indexedDB.open('TaskManager', 7); // DB version bump
 
           request.onerror = (event) => {
             reject(event.target.error);
@@ -155,21 +166,26 @@ function App() {
 
           request.onupgradeneeded = (event) => {
             const dbHandle = event.target.result;
+            const transaction = event.target.transaction;
 
-            // Create tasks store if it doesn't exist
+            // Create/update tasks store
+            let taskStore;
             if (!dbHandle.objectStoreNames.contains('tasks')) {
-              const taskStore = dbHandle.createObjectStore('tasks', { keyPath: 'id' });
-              taskStore.createIndex('completed', 'completed', { unique: false });
-              taskStore.createIndex('pinned', 'pinned', { unique: false });
-              taskStore.createIndex('createdAt', 'createdAt', { unique: false });
-              taskStore.createIndex('dueDate', 'dueDate', { unique: false });
+              taskStore = dbHandle.createObjectStore('tasks', { keyPath: 'id' });
+            } else {
+              taskStore = transaction.objectStore('tasks');
             }
+
+            // Add new indexes if they don't exist
+            if (!taskStore.indexNames.contains('completed')) taskStore.createIndex('completed', 'completed', { unique: false });
+            if (!taskStore.indexNames.contains('pinned')) taskStore.createIndex('pinned', 'pinned', { unique: false });
+            if (!taskStore.indexNames.contains('createdAt')) taskStore.createIndex('createdAt', 'createdAt', { unique: false });
+            if (!taskStore.indexNames.contains('dueDate')) taskStore.createIndex('dueDate', 'dueDate', { unique: false });
+            if (!taskStore.indexNames.contains('importance')) taskStore.createIndex('importance', 'importance', { unique: false });
+            if (!taskStore.indexNames.contains('urgency')) taskStore.createIndex('urgency', 'urgency', { unique: false });
 
             // Create archived store if it doesn't exist
-            if (!dbHandle.objectStoreNames.contains('archived')) {
-              const archivedStore = dbHandle.createObjectStore('archived', { keyPath: 'id' });
-              archivedStore.createIndex('archivedAt', 'archivedAt', { unique: false });
-            }
+            if (!dbHandle.objectStoreNames.contains('archived')) dbHandle.createObjectStore('archived', { keyPath: 'id' });
 
             // Create settings store if it doesn't exist
             if (!dbHandle.objectStoreNames.contains('settings')) {
@@ -378,7 +394,9 @@ function App() {
         id: Date.now(),
         text: inputValue.trim(),
         completed: false,
-        pinned: pinMode, // 'none', 'global', 'local'
+        pinned: pinMode,
+        urgency: isUrgent,
+        importance: isImportant,
         createdAt: today.toISOString(),
         dueDate: dueDate
       };
@@ -387,6 +405,8 @@ function App() {
       setTasks([...tasks, newTask]);
       setInputValue('');
       setPinMode('none');
+      setIsUrgent(false);
+      setIsImportant(false);
     }
   };
 
@@ -422,6 +442,32 @@ function App() {
     const updatedTasks = tasks.map(task => {
       if (task.id === id) {
         const updatedTask = { ...task, pinned: mode };
+        saveTaskToDB(updatedTask);
+        return updatedTask;
+      }
+      return task;
+    });
+
+    setTasks(updatedTasks);
+  };
+
+  const toggleImportance = (id) => {
+    const updatedTasks = tasks.map(task => {
+      if (task.id === id) {
+        const updatedTask = { ...task, importance: !task.importance };
+        saveTaskToDB(updatedTask);
+        return updatedTask;
+      }
+      return task;
+    });
+
+    setTasks(updatedTasks);
+  };
+
+  const toggleUrgency = (id) => {
+    const updatedTasks = tasks.map(task => {
+      if (task.id === id) {
+        const updatedTask = { ...task, urgency: !task.urgency };
         saveTaskToDB(updatedTask);
         return updatedTask;
       }
@@ -709,6 +755,15 @@ function App() {
     }
   };
 
+  const matrixTasks = React.useMemo(() => {
+    // Use the already filtered activeTasks list to respect date/tag filters
+    const doTasks = activeTasks.filter(t => t.importance && t.urgency);
+    const scheduleTasks = activeTasks.filter(t => t.importance && !t.urgency);
+    const delegateTasks = activeTasks.filter(t => !t.importance && t.urgency);
+    const eliminateTasks = activeTasks.filter(t => !t.importance && !t.urgency);
+    return { doTasks, scheduleTasks, delegateTasks, eliminateTasks };
+  }, [activeTasks]);
+
   if (isLoading) {
     // This prevents a flash of the full UI on fast loads
     // The loader itself will only appear after a short delay
@@ -732,15 +787,26 @@ function App() {
           <div className="lg:w-1/3">
             <div className="sticky top-4 bg-[var(--color-bg-primary)] rounded-2xl shadow-lg p-6">
               <div className="flex flex-row gap-4 mb-2">
-                <button
-                  onClick={() => setShowArchived(!showArchived)}
-                  className={`flex grow items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${showArchived ?
-                    'bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-button-primary-hover)]' :
-                    'bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]'}`}
-                >
-                  {showArchived ? <List size={20} /> : <Archive size={20} />}
-                  {showArchived ? 'Active Tasks' : 'Archived Tasks'}
-                </button>
+                <div className="flex-1 grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setShowArchived(!showArchived)}
+                    className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg transition-colors ${showArchived ?
+                      'bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-button-primary-hover)]' :
+                      'bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]'}`}
+                  >
+                    {showArchived ? <List size={20} /> : <Archive size={20} />}
+                    <span className="hidden sm:inline">{showArchived ? 'Active' : 'Archived'}</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode(viewMode === 'list' ? 'matrix' : 'list')}
+                    disabled={showArchived}
+                    className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg transition-colors bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)] disabled:opacity-50 disabled:cursor-not-allowed`}
+                    title={viewMode === 'list' ? 'Switch to Matrix View' : 'Switch to List View'}
+                  >
+                    {viewMode === 'list' ? <Grid size={20} /> : <List size={20} />}
+                    <span className="hidden sm:inline">{viewMode === 'list' ? 'Matrix' : 'List'}</span>
+                  </button>
+                </div>
 
                 {/* Settings Button */}
                 <button
@@ -898,6 +964,13 @@ function App() {
                   <button onClick={() => setPinMode('local')} title="Pin: Local" className={`p-2 rounded-full transition-colors ${pinMode === 'local' ? 'bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)]' : 'bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]'}`}>
                     <Pin size={16} />
                   </button>
+                  <div className="border-l h-6 border-[var(--color-border)] mx-2"></div>
+                  <button onClick={() => setIsImportant(!isImportant)} title={`Mark as ${isImportant ? 'Not Important' : 'Important'}`} className={`p-2 rounded-full transition-colors ${isImportant ? 'bg-amber-400 text-white' : 'bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]'}`}>
+                    <Star size={16} className={`${isImportant ? 'fill-white' : ''}`} />
+                  </button>
+                  <button onClick={() => setIsUrgent(!isUrgent)} title={`Mark as ${isUrgent ? 'Not Urgent' : 'Urgent'}`} className={`p-2 rounded-full transition-colors ${isUrgent ? 'bg-orange-500 text-white' : 'bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]'}`}>
+                    <Flame size={16} className={`${isUrgent ? 'fill-white' : ''}`} />
+                  </button>
                 </div>
                 <div className="text-xs text-[var(--color-text-light)] mt-2 text-center">
                   Press Enter to submit, Shift+Enter for new line
@@ -927,215 +1000,297 @@ function App() {
 
           {/* Task List Section */}
           <div className="lg:w-2/3">
-            <div className="bg-[var(--color-bg-primary)] rounded-2xl shadow-lg p-6">
-              <div className="mb-4">
-                <p className="text-[var(--color-text-secondary)]">
-                  {showArchived
-                    ? `Archived - ${archivedTasks.length} tasks`
-                    : selectedTag
-                      ? `Tasks with #${selectedTag} - ${activeTasks.length} tasks`
-                      : `${formatDate(selectedDate)} - ${activeTasks.length} tasks`}
-                </p>
-              </div>
-
-              {!showArchived ? (
-                <>
-                  {sortedTasks.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="text-[var(--color-text-light)] mb-4">
-                        <Check size={48} className="mx-auto" />
-                      </div>
-                      <p className="text-[var(--color-text-muted)]">
-                        No tasks for {formatDate(selectedDate)}
-                      </p>
+            {showArchived ? (
+              <div className="bg-[var(--color-bg-primary)] rounded-2xl shadow-lg p-6">
+                <div className="mb-4">
+                  <p className="text-[var(--color-text-secondary)]">
+                    Archived - {archivedTasks.length} tasks
+                  </p>
+                </div>
+                {archivedTasks.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-[var(--color-text-light)] mb-4">
+                      <Archive size={48} className="mx-auto" />
                     </div>
-                  ) : (
-                    <ul className="space-y-3">
-                      {sortedTasks.map((task) => {
-                        const isNsfw = checkIsNsfw(task.text, nsfwTagList);
-                        const isRevealed = revealedNsfw[task.id];
-
-                        return (
-                          <li
-                            key={task.id}
-                            className={`flex items-start justify-between p-4 rounded-xl transition-all duration-200 bg-[var(--color-bg-secondary)] border ${task.completed
-                              ? 'border-[var(--color-border)]'
-                              : 'border-[var(--color-border-uncompleted-task)]'
-                              } ${task.pinned !== 'none' ? 'ring-2 ring-[var(--color-ring)]' : ''}`}
-                          >
-                            <div className="flex items-start space-x-3 flex-1">
+                    <p className="text-[var(--color-text-muted)]">No archived tasks yet.</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-3">
+                    {[...archivedTasks]
+                      .sort((a, b) => new Date(b.archivedAt) - new Date(a.archivedAt))
+                      .map((task) => (
+                        <li
+                          key={task.id}
+                          className="flex items-start justify-between p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]"
+                        >
+                          <div className="flex items-start space-x-3 flex-1">
+                            <div className="w-6 h-6 rounded-full border-2 border-[var(--color-border)] flex items-center justify-center mt-1 flex-shrink-0">
                               <button
-                                onClick={() => toggleComplete(task.id)}
+                                onClick={() => restoreTask(task)}
                                 className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors mt-1 flex-shrink-0 ${task.completed ?
                                   'bg-[var(--color-button-primary)] border-[var(--color-checkbox-border-completed)] text-[var(--color-text-on-primary)]' :
                                   'border-[var(--color-checkbox-border)] hover:border-[var(--color-checkbox-border-hover)]'}`}
                               >
                                 {task.completed && <Check size={16} />}
                               </button>
-                              <div className="flex-1">
-                                {editingTask === task.id ? (
-                                  <div className="w-full">
-                                    <textarea
-                                      ref={editInputRef}
-                                      value={editText}
-                                      onChange={(e) => setEditText(e.target.value)}
-                                      onKeyDown={handleEditKeyPress}
-                                      className="w-full px-3 py-2 rounded-lg border-2 border-[var(--color-border)] focus:border-[var(--color-focus)] focus:outline-none bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] resize-none"
-                                      rows="3"
-                                    />
-                                    <div className="flex gap-2 mt-2">
-                                      <button
-                                        onClick={saveEditedTask}
-                                        className="px-3 py-1 rounded bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)] text-sm"
-                                      >
-                                        Save
-                                      </button>
-                                      <button
-                                        onClick={() => setEditingTask(null)}
-                                        className="px-3 py-1 rounded bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] text-sm"
-                                      >
-                                        Cancel
-                                      </button>
-                                    </div>
+                            </div>
+                            <div className="flex-1">
+                              <span className="text-[var(--color-text-light)] line-through whitespace-pre-wrap break-words">
+                                {renderTextWithLinks(task.text)}
+                              </span>
+                              <div className="text-xs text-[var(--color-text-light)] mt-1">
+                                Archived: {formatDate(task.archivedAt)}
+                              </div>
+                              {task.dueDate && (
+                                <div className="text-xs text-[var(--color-text-light)]">
+                                  Due: {formatDate(task.dueDate)}
+                                </div>
+                              )}
+                              {task.createdAt && (
+                                <div className="text-xs text-[var(--color-text-light)]">
+                                  Created: {formatDate(task.createdAt)}
+                                </div>
+                              )}
+                              {task.pinned === 'global' && (
+                                <div className="text-xs text-[var(--color-text-light)]">
+                                  Global pinned
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-start space-x-2 ml-2">
+                            <button
+                              onClick={() => deleteArchivedTask(task.id)}
+                              className="text-[var(--color-text-light)] hover:text-[var(--color-text-secondary)] transition-colors mt-1"
+                            >
+                              <Trash2 size={20} />
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                  </ul>
+                )}
+              </div>
+            ) : viewMode === 'list' ? (
+              <div className="bg-[var(--color-bg-primary)] rounded-2xl shadow-lg p-6">
+                <div className="mb-4">
+                  <p className="text-[var(--color-text-secondary)]">
+                    {selectedTag
+                      ? `Tasks with #${selectedTag} - ${activeTasks.length} tasks`
+                      : `${formatDate(selectedDate)} - ${activeTasks.length} tasks`}
+                  </p>
+                </div>
+                {sortedTasks.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-[var(--color-text-light)] mb-4">
+                      <Check size={48} className="mx-auto" />
+                    </div>
+                    <p className="text-[var(--color-text-muted)]">
+                      No tasks for {formatDate(selectedDate)}
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="space-y-3">
+                    {sortedTasks.map((task) => {
+                      const isNsfw = checkIsNsfw(task.text, nsfwTagList);
+                      const isRevealed = revealedNsfw[task.id];
+
+                      return (
+                        <li
+                          key={task.id}
+                          className={`flex items-start justify-between p-4 rounded-xl transition-all duration-200 bg-[var(--color-bg-secondary)] border ${task.completed
+                            ? 'border-[var(--color-border)]'
+                            : 'border-[var(--color-border-uncompleted-task)]'
+                            } ${task.pinned !== 'none' ? 'ring-2 ring-[var(--color-ring)]' : ''}`}
+                        >
+                          <div className="flex items-start space-x-3 flex-1">
+                            <button
+                              onClick={() => toggleComplete(task.id)}
+                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors mt-1 flex-shrink-0 ${task.completed ?
+                                'bg-[var(--color-button-primary)] border-[var(--color-checkbox-border-completed)] text-[var(--color-text-on-primary)]' :
+                                'border-[var(--color-checkbox-border)] hover:border-[var(--color-checkbox-border-hover)]'}`}
+                            >
+                              {task.completed && <Check size={16} />}
+                            </button>
+                            <div className="flex-1">
+                              {editingTask === task.id ? (
+                                <div className="w-full">
+                                  <textarea
+                                    ref={editInputRef}
+                                    value={editText}
+                                    onChange={(e) => setEditText(e.target.value)}
+                                    onKeyDown={handleEditKeyPress}
+                                    className="w-full px-3 py-2 rounded-lg border-2 border-[var(--color-border)] focus:border-[var(--color-focus)] focus:outline-none bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] resize-none"
+                                    rows="3"
+                                  />
+                                  <div className="flex gap-2 mt-2">
+                                    <button
+                                      onClick={saveEditedTask}
+                                      className="px-3 py-1 rounded bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)] text-sm"
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingTask(null)}
+                                      className="px-3 py-1 rounded bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] text-sm"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                isNsfw && !isRevealed ? (
+                                  <div className="flex items-center gap-2 p-2 rounded-lg bg-opacity-50">
+                                    <span className="text-[var(--color-text-muted)]">Content hidden (NSFW tag)</span>
+                                    <button
+                                      onClick={() => setRevealedNsfw(prev => ({ ...prev, [task.id]: true }))}
+                                      className="px-2 py-1 rounded bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] text-sm flex items-center gap-1 hover:bg-[var(--color-button-secondary-hover)]"
+                                    >
+                                      <Eye size={14} /> Show
+                                    </button>
                                   </div>
                                 ) : (
-                                  isNsfw && !isRevealed ? (
-                                    <div className="flex items-center gap-2 p-2 rounded-lg bg-opacity-50">
-                                      <span className="text-[var(--color-text-muted)]">Content hidden (NSFW tag)</span>
+                                  <div className="relative" onDoubleClick={() => handleDoubleClick(task)}>
+                                    {isNsfw && isRevealed && (
                                       <button
-                                        onClick={() => setRevealedNsfw(prev => ({ ...prev, [task.id]: true }))}
-                                        className="px-2 py-1 rounded bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] text-sm flex items-center gap-1 hover:bg-[var(--color-button-secondary-hover)]"
+                                        onClick={() => setRevealedNsfw(prev => ({ ...prev, [task.id]: false }))}
+                                        className="absolute -top-2 -right-2 p-1 rounded-full bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]"
+                                        title="Hide content"
                                       >
-                                        <Eye size={14} /> Show
+                                        <EyeOff size={14} />
                                       </button>
-                                    </div>
-                                  ) : (
-                                    <div className="relative" onDoubleClick={() => handleDoubleClick(task)}>
-                                      {isNsfw && isRevealed && (
-                                        <button
-                                          onClick={() => setRevealedNsfw(prev => ({ ...prev, [task.id]: false }))}
-                                          className="absolute -top-2 -right-2 p-1 rounded-full bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]"
-                                          title="Hide content"
-                                        >
-                                          <EyeOff size={14} />
-                                        </button>
-                                      )}
-                                      <span
-                                        className={`${task.completed ?
-                                          'text-[var(--color-text-light)] line-through' :
-                                          'text-[var(--color-text-primary)]'
-                                          } whitespace-pre-wrap break-words`}
-                                      >
-                                        {renderTextWithLinks(task.text)}
-                                      </span>
-                                      {(task.pinned === 'none' || task.pinned === 'local') && task.dueDate && (
-                                        <div className="text-xs text-[var(--color-text-light)] mt-1">
-                                          Due: {formatDate(task.dueDate)}
-                                        </div>
-                                      )}
-                                      {task.pinned === 'global' && task.createdAt && (
-                                        <div className="text-xs text-[var(--color-text-light)] mt-1">
-                                          Created: {formatDate(task.createdAt)}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-start space-x-2 ml-2 self-center">
-                              <div className="relative w-6 h-6 flex items-center justify-center">
-                                <select
-                                  value={task.pinned}
-                                  onChange={(e) => updatePinMode(task.id, e.target.value)}
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                  title={`Change pin mode (current: ${task.pinned})`}
-                                >
-                                  <option value="none">None</option>
-                                  <option value="global">Global</option>
-                                  <option value="local">Local</option>
-                                </select>
-                                <div className="pointer-events-none">
-                                  {task.pinned === 'global' && <Shield size={16} className="text-[var(--color-text-secondary)]" />}
-                                  {task.pinned === 'local' && <Pin size={16} className="text-[var(--color-text-secondary)]" />}
-                                  {task.pinned === 'none' && <PinOff size={16} className="text-[var(--color-text-light)]" />}
-                                </div>
-                              </div>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </>
-              ) : (
-                <>
-                  {archivedTasks.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="text-[var(--color-text-light)] mb-4">
-                        <Archive size={48} className="mx-auto" />
-                      </div>
-                      <p className="text-[var(--color-text-muted)]">No archived tasks yet.</p>
-                    </div>
-                  ) : (
-                    <ul className="space-y-3">
-                      {[...archivedTasks]
-                        .sort((a, b) => new Date(b.archivedAt) - new Date(a.archivedAt))
-                        .map((task) => (
-                          <li
-                            key={task.id}
-                            className="flex items-start justify-between p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]"
-                          >
-                            <div className="flex items-start space-x-3 flex-1">
-                              <div className="w-6 h-6 rounded-full border-2 border-[var(--color-border)] flex items-center justify-center mt-1 flex-shrink-0">
-                                <button
-                                  onClick={() => restoreTask(task)}
-                                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors mt-1 flex-shrink-0 ${task.completed ?
-                                    'bg-[var(--color-button-primary)] border-[var(--color-checkbox-border-completed)] text-[var(--color-text-on-primary)]' :
-                                    'border-[var(--color-checkbox-border)] hover:border-[var(--color-checkbox-border-hover)]'}`}
-                                >
-                                  {task.completed && <Check size={16} />}
-                                </button>
-                              </div>
-                              <div className="flex-1">
-                                <span className="text-[var(--color-text-light)] line-through whitespace-pre-wrap break-words">
-                                  {renderTextWithLinks(task.text)}
-                                </span>
-                                <div className="text-xs text-[var(--color-text-light)] mt-1">
-                                  Archived: {formatDate(task.archivedAt)}
-                                </div>
-                                {task.dueDate && (
-                                  <div className="text-xs text-[var(--color-text-light)]">
-                                    Due: {formatDate(task.dueDate)}
+                                    )}
+                                    <span
+                                      className={`${task.completed ?
+                                        'text-[var(--color-text-light)] line-through' :
+                                        'text-[var(--color-text-primary)]'
+                                        } whitespace-pre-wrap break-words`}
+                                    >
+                                      {renderTextWithLinks(task.text)}
+                                    </span>
+                                    {(task.pinned === 'none' || task.pinned === 'local') && task.dueDate && (
+                                      <div className="text-xs text-[var(--color-text-light)] mt-1">
+                                        Due: {formatDate(task.dueDate)}
+                                      </div>
+                                    )}
+                                    {task.pinned === 'global' && task.createdAt && (
+                                      <div className="text-xs text-[var(--color-text-light)] mt-1">
+                                        Created: {formatDate(task.createdAt)}
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                                {task.createdAt && (
-                                  <div className="text-xs text-[var(--color-text-light)]">
-                                    Created: {formatDate(task.createdAt)}
-                                  </div>
-                                )}
-                                {task.pinned === 'global' && (
-                                  <div className="text-xs text-[var(--color-text-light)]">
-                                    Global pinned
-                                  </div>
-                                )}
-                              </div>
+                                )
+                              )}
                             </div>
-                            <div className="flex items-start space-x-2 ml-2">
-                              <button
-                                onClick={() => deleteArchivedTask(task.id)}
-                                className="text-[var(--color-text-light)] hover:text-[var(--color-text-secondary)] transition-colors mt-1"
+                          </div>
+                          <div className="flex items-center space-x-1 ml-2 self-center">
+                            <button
+                              onClick={() => toggleImportance(task.id)}
+                              className="p-1 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)] transition-colors"
+                              title={task.importance ? 'Mark as Not Important' : 'Mark as Important'}
+                            >
+                              <Star size={16} className={`${task.importance ? 'fill-amber-400 text-amber-500' : 'fill-none'}`} />
+                            </button>
+                            <button
+                              onClick={() => toggleUrgency(task.id)}
+                              className="p-1 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)] transition-colors"
+                              title={task.urgency ? 'Mark as Not Urgent' : 'Mark as Urgent'}
+                            >
+                              <Flame size={16} className={`${task.urgency ? 'fill-orange-500 text-orange-600' : 'fill-none'}`} />
+                            </button>
+                            <div className="relative w-6 h-6 flex items-center justify-center">
+                              <select
+                                value={task.pinned}
+                                onChange={(e) => updatePinMode(task.id, e.target.value)}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                title={`Change pin mode (current: ${task.pinned})`}
                               >
-                                <Trash2 size={20} />
-                              </button>
+                                <option value="none">None</option>
+                                <option value="global">Global</option>
+                                <option value="local">Local</option>
+                              </select>
+                              <div className="pointer-events-none">
+                                {task.pinned === 'global' && <Shield size={16} className="text-[var(--color-text-secondary)]" />}
+                                {task.pinned === 'local' && <Pin size={16} className="text-[var(--color-text-secondary)]" />}
+                                {task.pinned === 'none' && <PinOff size={16} className="text-[var(--color-text-light)]" />}
+                              </div>
                             </div>
-                          </li>
-                        ))}
-                    </ul>
-                  )}
-                </>
-              )}
-            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            ) : (
+              // Eisenhower Matrix View
+              <div className="bg-[var(--color-bg-primary)] rounded-2xl shadow-lg p-6">
+                <div className="mb-4">
+                  <h3 className="text-xl font-bold text-[var(--color-text-primary)]">Eisenhower Matrix</h3>
+                  <p className="text-[var(--color-text-secondary)]">
+                    {selectedTag
+                      ? `Filtered by #${selectedTag}`
+                      : `Showing tasks for ${formatDate(selectedDate)}`}<span className="text-[var(--color-text-muted)]"> ({activeTasks.length} tasks)</span>
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:h-[70vh]">
+                  {[
+                    { title: 'Do', description: 'Urgent & Important', tasks: matrixTasks.doTasks, bgColorVar: 'var(--color-matrix-do-bg)' },
+                    { title: 'Schedule', description: 'Important & Not Urgent', tasks: matrixTasks.scheduleTasks, bgColorVar: 'var(--color-matrix-schedule-bg)' },
+                    { title: 'Delegate', description: 'Urgent & Not Important', tasks: matrixTasks.delegateTasks, bgColorVar: 'var(--color-matrix-delegate-bg)' },
+                    { title: 'Eliminate', description: 'Not Urgent & Not Important', tasks: matrixTasks.eliminateTasks, bgColorVar: 'var(--color-matrix-eliminate-bg)' },
+                  ].map(({ title, description, tasks, bgColorVar }) => (
+                    <div
+                      key={title}
+                      className={`rounded-xl p-4 flex flex-col min-h-[50vh] md:min-h-0 md:h-full`}
+                      style={{ backgroundColor: bgColorVar }}
+                    >
+                      <h4 className="font-bold text-lg text-[var(--color-text-primary)]">{title}</h4>
+                      <p className="text-sm text-[var(--color-text-muted)] mb-4 flex-shrink-0">{description}</p>
+                      <div className="overflow-y-auto h-full -mr-2">
+                        <ul className="space-y-3 pr-2">
+                          {tasks.length > 0 ? (
+                            tasks.map(task => (
+                              <li key={task.id} className="flex items-start justify-between p-3 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+                                <div className="flex items-start space-x-3 flex-1">
+                                  <button onClick={() => toggleComplete(task.id)} className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors mt-1 flex-shrink-0 border-[var(--color-checkbox-border)] hover:border-[var(--color-checkbox-border-hover)]" />
+                                  <div className="flex-1 text-sm" onDoubleClick={() => handleDoubleClick(task)}>
+                                    <span className="text-[var(--color-text-primary)] whitespace-pre-wrap break-words">{renderTextWithLinks(task.text)}</span>
+                                    {task.dueDate && <div className="text-xs text-[var(--color-text-light)] mt-1">Due: {formatDate(task.dueDate)}</div>}
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-1 ml-2 self-center">
+                                  <button onClick={() => toggleImportance(task.id)} className="p-1 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)] transition-colors" title={task.importance ? 'Mark as Not Important' : 'Mark as Important'}>
+                                    <Star size={14} className={`${task.importance ? 'fill-amber-400 text-amber-500' : 'fill-none'}`} />
+                                  </button>
+                                  <button onClick={() => toggleUrgency(task.id)} className="p-1 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)] transition-colors" title={task.urgency ? 'Mark as Not Urgent' : 'Mark as Urgent'}>
+                                    <Flame size={14} className={`${task.urgency ? 'fill-orange-500 text-orange-600' : 'fill-none'}`} />
+                                  </button>
+                                  <div className="relative w-5 h-5 flex items-center justify-center">
+                                    <select value={task.pinned} onChange={(e) => updatePinMode(task.id, e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" title={`Change pin mode (current: ${task.pinned})`}>
+                                      <option value="none">None</option>
+                                      <option value="global">Global</option>
+                                      <option value="local">Local</option>
+                                    </select>
+                                    <div className="pointer-events-none">
+                                      {task.pinned === 'global' && <Shield size={14} className="text-[var(--color-text-secondary)]" />}
+                                      {task.pinned === 'local' && <Pin size={14} className="text-[var(--color-text-secondary)]" />}
+                                      {task.pinned === 'none' && <PinOff size={14} className="text-[var(--color-text-light)]" />}
+                                    </div>
+                                  </div>
+                                </div>
+                              </li>
+                            ))
+                          ) : (
+                            <p className="text-sm text-[var(--color-text-muted)] italic p-4 text-center">No tasks here.</p>
+                          )}
+                        </ul>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
