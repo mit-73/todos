@@ -1,6 +1,97 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Check, Pin, PinOff, Archive, List, Send, Shield, Settings, X, Eye, EyeOff, LoaderCircle, Star, Grid, Flame, Clock, Edit3, ChevronLeft } from 'lucide-react';
 
+// --- Material 3-inspired Color System ---
+
+const hexToHSL = (hex) => {
+  if (!hex || !hex.startsWith('#')) return { h: 0, s: 0, l: 0 };
+  let r = 0, g = 0, b = 0;
+  if (hex.length === 4) { // #rgb
+    r = parseInt(hex[1] + hex[1], 16);
+    g = parseInt(hex[2] + hex[2], 16);
+    b = parseInt(hex[3] + hex[3], 16);
+  } else if (hex.length === 7) { // #rrggbb
+    r = parseInt(hex.substring(1, 3), 16);
+    g = parseInt(hex.substring(3, 5), 16);
+    b = parseInt(hex.substring(5, 7), 16);
+  }
+  r /= 255; g /= 255; b /= 255;
+  const cmin = Math.min(r, g, b),
+        cmax = Math.max(r, g, b),
+        delta = cmax - cmin;
+  let h = 0, s = 0, l = 0;
+
+  if (delta === 0) h = 0;
+  else if (cmax === r) h = ((g - b) / delta) % 6;
+  else if (cmax === g) h = (b - r) / delta + 2;
+  else h = (r - g) / delta + 4;
+
+  h = Math.round(h * 60);
+  if (h < 0) h += 360;
+
+  l = (cmax + cmin) / 2;
+  s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
+  s = +(s * 100).toFixed(1);
+  l = +(l * 100).toFixed(1);
+
+  return { h, s, l };
+};
+
+const hslToCss = (h, s, l, a = 1) => `hsl(${h} ${s}% ${l}% / ${a})`;
+
+const generateTonalPalette = (h, s) => {
+    const tones = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99, 100];
+    const palette = {};
+    for (const tone of tones) {
+        palette[tone] = hslToCss(h, s, tone);
+    }
+    return palette;
+};
+
+const generateM3Scheme = (sourceHex) => {
+    const primaryHSL = hexToHSL(sourceHex);
+    const secondaryHSL = { h: (primaryHSL.h + 60) % 360, s: Math.max(10, primaryHSL.s * 0.35), l: primaryHSL.l };
+    const tertiaryHSL = { h: (primaryHSL.h - 60 + 360) % 360, s: Math.max(20, primaryHSL.s * 0.75), l: primaryHSL.l };
+    const neutralHSL = { h: primaryHSL.h, s: Math.max(2, primaryHSL.s * 0.1), l: primaryHSL.l };
+    const neutralVariantHSL = { h: primaryHSL.h, s: Math.max(5, primaryHSL.s * 0.2), l: primaryHSL.l };
+    const errorHSL = { h: 25, s: 84, l: 50 };
+
+    const pPalette = generateTonalPalette(primaryHSL.h, primaryHSL.s);
+    const sPalette = generateTonalPalette(secondaryHSL.h, secondaryHSL.s);
+    const tPalette = generateTonalPalette(tertiaryHSL.h, tertiaryHSL.s);
+    const nPalette = generateTonalPalette(neutralHSL.h, neutralHSL.s);
+    const nvPalette = generateTonalPalette(neutralVariantHSL.h, neutralVariantHSL.s);
+    const ePalette = generateTonalPalette(errorHSL.h, errorHSL.s);
+
+    // Light theme color roles from Material Design 3
+    return {
+        primary: pPalette[40],
+        onPrimary: pPalette[100],
+        primaryContainer: pPalette[90],
+        onPrimaryContainer: pPalette[10],
+        secondary: sPalette[40],
+        onSecondary: sPalette[100],
+        secondaryContainer: sPalette[90],
+        onSecondaryContainer: sPalette[10],
+        tertiary: tPalette[40],
+        onTertiary: tPalette[100],
+        tertiaryContainer: tPalette[90],
+        onTertiaryContainer: tPalette[10],
+        error: ePalette[40],
+        onError: ePalette[100],
+        errorContainer: ePalette[90],
+        onErrorContainer: ePalette[10],
+        background: nPalette[99],
+        onBackground: nPalette[10],
+        surface: nPalette[99],
+        onSurface: nPalette[10],
+        surfaceVariant: nvPalette[90],
+        onSurfaceVariant: nvPalette[30],
+        outline: nvPalette[50],
+        outlineVariant: nvPalette[80],
+    };
+};
+
 function App() {
   const [tasks, setTasks] = useState([]);
   const [archivedTasks, setArchivedTasks] = useState([]);
@@ -76,85 +167,53 @@ function App() {
     }
   };
 
-  // Color manipulation and theme generation
-  const hexToHSL = (hex) => {
-    let r = 0, g = 0, b = 0;
-    if (hex.length === 4) {
-      r = "0x" + hex[1] + hex[1];
-      g = "0x" + hex[2] + hex[2];
-      b = "0x" + hex[3] + hex[3];
-    } else if (hex.length === 7) {
-      r = "0x" + hex[1] + hex[2];
-      g = "0x" + hex[3] + hex[4];
-      b = "0x" + hex[5] + hex[6];
-    }
-    r /= 255; g /= 255; b /= 255;
-    let cmin = Math.min(r, g, b), cmax = Math.max(r, g, b), delta = cmax - cmin, h = 0, s = 0, l = 0;
-    if (delta === 0) h = 0;
-    else if (cmax === r) h = ((g - b) / delta) % 6;
-    else if (cmax === g) h = (b - r) / delta + 2;
-    else h = (r - g) / delta + 4;
-    h = Math.round(h * 60);
-    if (h < 0) h += 360;
-    l = (cmax + cmin) / 2;
-    s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
-    s = +(s * 100).toFixed(1);
-    l = +(l * 100).toFixed(1);
-    return { h, s, l };
-  };
-
-  const hslToCss = (h, s, l, a = 1) => `hsl(${h} ${s}% ${l}% / ${a})`;
-
   const generatePaletteFromHex = React.useCallback((baseHex) => {
-    const { h, s, l } = hexToHSL(baseHex);
-    const safeSat = Math.max(10, s); // Ensure there's some saturation for grayscale colors
-    const themeSat = Math.max(50, s); // Ensure colors are not too gray for matrix
-    const themeLight = 55; // A consistent lightness for these backgrounds
-    const themeAlpha = 0.1; // 10% opacity
+    const scheme = generateM3Scheme(baseHex);
+    const { h, s, l } = hexToHSL(scheme.primary);
 
     return {
-      primary: baseHex,
-      gradientFrom: hslToCss(h, safeSat, 97),
-      gradientTo: hslToCss(h, safeSat, 95),
-      bgPrimary: hslToCss(h, safeSat, 97),
-      bgSecondary: hslToCss(h, safeSat, 94),
-      textPrimary: hslToCss(h, Math.min(90, s * 1.2), 25),
-      textSecondary: hslToCss(h, s, 40),
-      textMuted: hslToCss(h, s * 0.8, 55),
-      textLight: hslToCss(h, s * 0.7, 70),
-      border: hslToCss(h, safeSat * 0.8, 90),
-      focus: baseHex,
-      buttonPrimary: baseHex,
-      buttonPrimaryHover: hslToCss(h, s, l - 5),
-      buttonSecondary: hslToCss(h, safeSat * 0.9, 94),
-      buttonSecondaryHover: hslToCss(h, safeSat * 0.9, 91),
+      primary: scheme.primary,
+      gradientFrom: scheme.secondaryContainer,
+      gradientTo: scheme.tertiaryContainer,
+      bgPrimary: scheme.surface,
+      bgSecondary: scheme.secondaryContainer,
+      textPrimary: scheme.onSurface,
+      textSecondary: scheme.onSecondaryContainer,
+      textMuted: hslToCss(hexToHSL(scheme.onSurface).h, hexToHSL(scheme.onSurface).s, 55),
+      textLight: hslToCss(hexToHSL(scheme.onSurface).h, hexToHSL(scheme.onSurface).s, 70),
+      border: scheme.outlineVariant,
+      focus: scheme.primary,
+      buttonPrimary: scheme.primary,
+      buttonPrimaryHover: hslToCss(hexToHSL(scheme.primary).h, hexToHSL(scheme.primary).s, hexToHSL(scheme.primary).l - 5), // Keep some interaction flair
+      buttonSecondary: scheme.secondaryContainer,
+      buttonSecondaryHover: scheme.primaryContainer,
       ring: hslToCss(h, s, l + 20, 0.5),
-      calendarToday: hslToCss(h, s, 85),
-      calendarSelected: baseHex,
-      calendarHover: hslToCss(h, safeSat, 91),
-      textOnPrimary: l > 50 ? '#000' : '#fff',
-      link: baseHex,
-      linkHover: hslToCss(h, s, l - 10),
-      switchInactive: hslToCss(h, safeSat * 0.5, 85),
-      switchThumb: '#fff',
-      borderUncompletedTask: hslToCss(h, safeSat * 0.5, 95),
-      checkboxBorder: hslToCss(h, s, 70),
-      checkboxBorderHover: baseHex,
-      checkboxBorderCompleted: baseHex,
-      selectHover: hslToCss(h, s, l - 10),
-      themeSelectBorderActive: baseHex,
+      calendarToday: scheme.primaryContainer,
+      calendarSelected: scheme.primary,
+      calendarHover: scheme.primaryContainer,
+      textOnPrimary: scheme.onPrimary,
+      link: scheme.primary,
+      linkHover: scheme.tertiary,
+      switchInactive: scheme.outline,
+      switchThumb: scheme.surface,
+      borderUncompletedTask: scheme.outlineVariant,
+      checkboxBorder: scheme.outline,
+      checkboxBorderHover: scheme.primary,
+      checkboxBorderCompleted: scheme.primary,
+      selectHover: scheme.secondary,
+      themeSelectBorderActive: scheme.primary,
       themeSelectRingActive: hslToCss(h, s, l + 20, 0.5),
-      themeSelectRingHover: hslToCss(h, safeSat, 91),
-      buttonDanger: '#dc2626',
-      buttonDangerHover: '#b91c1c',
-      textDanger: '#b91c1c',
-      borderDanger: '#fecaca',
+      themeSelectRingHover: scheme.primaryContainer,
+      buttonDanger: scheme.error,
+      buttonDangerHover: hslToCss(hexToHSL(scheme.error).h, hexToHSL(scheme.error).s, hexToHSL(scheme.error).l - 5),
+      textDanger: scheme.error,
+      borderDanger: scheme.errorContainer,
 
       // Matrix quadrant backgrounds
-      matrixDoBg: hslToCss(0, themeSat, themeLight, themeAlpha), // Red-ish
-      matrixScheduleBg: hslToCss(h, themeSat, themeLight, themeAlpha), // Theme color
-      matrixDelegateBg: hslToCss(39, themeSat, themeLight, themeAlpha), // Orange-ish
-      matrixEliminateBg: hslToCss(h, safeSat * 0.3, 94), // Muted gray-ish
+      matrixDoBg: scheme.errorContainer,
+      matrixScheduleBg: scheme.tertiaryContainer,
+      matrixDelegateBg: scheme.outlineVariant,
+      matrixEliminateBg: scheme.surfaceVariant,
     };
   }, []);
 
@@ -227,8 +286,7 @@ function App() {
               settingsStore.put({ id: 'theme', value: 'purple' });
               settingsStore.put({ id: 'weekStart', value: 0 }); // Sunday by default
               settingsStore.put({ id: 'hideGlobal', value: false });
-              settingsStore.put({ id: 'hideLocal', value: false });
-              settingsStore.put({ id: 'customColor', value: '#8b5cf6' });
+              settingsStore.put({ id: 'hideLocal', value: false });              settingsStore.put({ id: 'customColor', value: '#8b5cf6' });
               settingsStore.put({ id: 'nsfwTags', value: '' });
             }
 
@@ -605,22 +663,32 @@ function App() {
     setSelectedDate(newDate);
   };
 
+  const goToToday = () => {
+    const today = new Date();
+    setCurrentDate(today);
+    setSelectedDate(today);
+  };
+
   // Filter tasks by selected date
   const filteredTasks = tasks.filter(task => {
     // Hide global/local tasks if setting is enabled
     if (hideGlobal && task.pinned === 'global') return false;
     if (hideLocal && task.pinned === 'local') return false;
 
-    // If a tag is selected, it's the primary filter.
-    if (selectedTag) {
-      const taskTags = (task.text.match(/#(\w+)/g) || []).map(t => t.substring(1));
-      return taskTags.includes(selectedTag);
+    const hasSelectedTag = selectedTag
+      ? (task.text.match(/#(\w+)/g) || []).map(t => t.substring(1)).includes(selectedTag)
+      : true; // If no tag is selected, all tasks pass this check.
+
+    if (!hasSelectedTag) {
+      return false;
     }
 
-    // Otherwise, use date-based filtering
-    if (task.pinned === 'global') return true; // Already checked hideGlobal
+    // Global tasks are shown on all days if they match the tag filter (if any)
+    if (task.pinned === 'global') {
+      return true;
+    }
 
-    // Show tasks with due date matching selected date
+    // For all other tasks, check the due date.
     if (!task.dueDate) return false;
     const taskDueDate = new Date(task.dueDate);
     return taskDueDate.toDateString() === selectedDate.toDateString();
@@ -959,21 +1027,29 @@ function App() {
               {/* Calendar */}
               <div className="bg-[var(--color-bg-secondary)] rounded-xl p-4 mb-6">
                 <div className="flex justify-between items-center mb-4">
-                  <button
-                    onClick={prevMonth}
-                    className="p-2 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]"
-                  >
-                    &lt;
-                  </button>
                   <h3 className="font-semibold text-[var(--color-text-primary)]">
                     {formatDate(currentDate, { month: 'long', year: 'numeric' })}
                   </h3>
-                  <button
-                    onClick={nextMonth}
-                    className="p-2 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]"
-                  >
-                    &gt;
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={prevMonth}
+                      className="p-2 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]"
+                    >
+                      &lt;
+                    </button>
+                    <button
+                      onClick={goToToday}
+                      className="p-2 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)] text-sm"
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={nextMonth}
+                      className="p-2 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]"
+                    >
+                      &gt;
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-7 gap-1 mb-2">
@@ -1161,56 +1237,72 @@ function App() {
                   <ul className="space-y-3">
                     {[...archivedTasks]
                       .sort((a, b) => new Date(b.archivedAt) - new Date(a.archivedAt))
-                      .map((task) => (
-                        <li
-                          key={task.id}
-                          className="flex items-start justify-between p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]"
-                        >
-                          <div className="flex items-start space-x-3 flex-1">
-                            <div className="w-6 h-6 rounded-full border-2 border-[var(--color-border)] flex items-center justify-center mt-1 flex-shrink-0">
+                      .map((task) => {
+                        const isNsfw = checkIsNsfw(task.text, nsfwTagList);
+                        const isRevealed = revealedNsfw[task.id];
+
+                        return (
+                          <li
+                            key={task.id}
+                            className="flex items-start justify-between p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]"
+                          >
+                            <div className="flex items-start space-x-3 flex-1">
+                              <div className="w-6 h-6 rounded-full border-2 border-[var(--color-border)] flex items-center justify-center mt-1 flex-shrink-0">
+                                <button
+                                  onClick={() => restoreTask(task)}
+                                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors mt-1 flex-shrink-0 ${task.completed ?
+                                    'bg-[var(--color-button-primary)] border-[var(--color-checkbox-border-completed)] text-[var(--color-text-on-primary)]' :
+                                    'border-[var(--color-checkbox-border)] hover:border-[var(--color-checkbox-border-hover)]'}`}
+                                >
+                                  {task.completed && <Check size={16} />}
+                                </button>
+                              </div>
+                              <div className="flex-1">
+                                {isNsfw && !isRevealed ? (
+                                  <div className="flex items-center gap-2 p-2 rounded-lg bg-opacity-50">
+                                    <span className="text-[var(--color-text-muted)]">Content hidden (NSFW tag)</span>
+                                    <button
+                                      onClick={() => setRevealedNsfw(prev => ({ ...prev, [task.id]: true }))}
+                                      className="px-2 py-1 rounded bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] text-sm flex items-center gap-1 hover:bg-[var(--color-button-secondary-hover)]"
+                                    >
+                                      <Eye size={14} /> Show
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="relative">
+                                    {isNsfw && isRevealed && (
+                                      <button
+                                        onClick={() => setRevealedNsfw(prev => ({ ...prev, [task.id]: false }))}
+                                        className="absolute -top-2 -right-2 p-1 rounded-full bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]"
+                                        title="Hide content"
+                                      >
+                                        <EyeOff size={14} />
+                                      </button>
+                                    )}
+                                    <span className="text-[var(--color-text-light)] line-through whitespace-pre-wrap break-words">
+                                      {renderTextWithLinks(task.text)}
+                                    </span>
+                                    <div className="text-xs text-[var(--color-text-light)] mt-1">
+                                      Archived: {formatDate(task.archivedAt)}
+                                    </div>
+                                    {task.dueDate && <div className="text-xs text-[var(--color-text-light)]">Due: {formatDate(task.dueDate)}</div>}
+                                    {task.createdAt && <div className="text-xs text-[var(--color-text-light)]">Created: {formatDate(task.createdAt)}</div>}
+                                    {task.pinned === 'global' && <div className="text-xs text-[var(--color-text-light)]">Global pinned</div>}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-start space-x-2 ml-2">
                               <button
-                                onClick={() => restoreTask(task)}
-                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors mt-1 flex-shrink-0 ${task.completed ?
-                                  'bg-[var(--color-button-primary)] border-[var(--color-checkbox-border-completed)] text-[var(--color-text-on-primary)]' :
-                                  'border-[var(--color-checkbox-border)] hover:border-[var(--color-checkbox-border-hover)]'}`}
+                                onClick={() => deleteArchivedTask(task.id)}
+                                className="text-[var(--color-text-light)] hover:text-[var(--color-text-secondary)] transition-colors mt-1"
                               >
-                                {task.completed && <Check size={16} />}
+                                <Trash2 size={20} />
                               </button>
                             </div>
-                            <div className="flex-1">
-                              <span className="text-[var(--color-text-light)] line-through whitespace-pre-wrap break-words">
-                                {renderTextWithLinks(task.text)}
-                              </span>
-                              <div className="text-xs text-[var(--color-text-light)] mt-1">
-                                Archived: {formatDate(task.archivedAt)}
-                              </div>
-                              {task.dueDate && (
-                                <div className="text-xs text-[var(--color-text-light)]">
-                                  Due: {formatDate(task.dueDate)}
-                                </div>
-                              )}
-                              {task.createdAt && (
-                                <div className="text-xs text-[var(--color-text-light)]">
-                                  Created: {formatDate(task.createdAt)}
-                                </div>
-                              )}
-                              {task.pinned === 'global' && (
-                                <div className="text-xs text-[var(--color-text-light)]">
-                                  Global pinned
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-start space-x-2 ml-2">
-                            <button
-                              onClick={() => deleteArchivedTask(task.id)}
-                              className="text-[var(--color-text-light)] hover:text-[var(--color-text-secondary)] transition-colors mt-1"
-                            >
-                              <Trash2 size={20} />
-                            </button>
-                          </div>
-                        </li>
-                      ))}
+                          </li>
+                        );
+                      })}
                   </ul>
                 )}
               </div>
