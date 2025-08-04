@@ -1,8 +1,34 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), VitePWA({
+    registerType: 'autoUpdate',
+    devOptions: {
+      enabled: false,
+      type: 'module',
+      navigateFallback: 'index.html',
+    },
+    manifest: {
+      name: 'Todo App',
+      short_name: 'TodoApp',
+      description: 'A simple to-do application',
+      background_color: '#ffffff',
+      theme_color: '#000000',
+      icons: [
+        {
+          "src": "/icon.png",
+          "sizes": "256x256",
+          "type": "image/png"
+        }
+      ],
+      workbox: {
+        // defining cached files formats
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
+      },
+    },
+  })],
   base: '/todos/',
 })
