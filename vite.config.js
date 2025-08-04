@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+var baseUrl = "/todos/"
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), VitePWA({
@@ -15,6 +17,7 @@ export default defineConfig({
       name: 'Todo App',
       short_name: 'TodoApp',
       description: 'A simple to-do application',
+      start_url: baseUrl,
       background_color: '#ffffff',
       theme_color: '#000000',
       icons: [
@@ -30,5 +33,5 @@ export default defineConfig({
       },
     },
   })],
-  base: '/todos/',
+  base: baseUrl,
 })
