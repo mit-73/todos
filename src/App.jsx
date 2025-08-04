@@ -147,8 +147,11 @@ function App() {
   const [calendarViewMode, setCalendarViewMode] = useState('days'); // 'days', 'months', 'years'
   const [editingTask, setEditingTask] = useState(null);
   const [editText, setEditText] = useState('');
+  const [tagSuggestions, setTagSuggestions] = useState([]);
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const [highlightedTagIndex, setHighlightedTagIndex] = useState(0);
   const textareaRef = useRef(null);
-  const editInputRef = useRef(null);
+  const suggestionsRef = useRef(null);
 
   // --- Day Planner State ---
   const [plannerBlocks, setPlannerBlocks] = useState([]);
@@ -603,6 +606,7 @@ function App() {
   // Focus edit input when editing
   useEffect(() => {
     if (editingTask && editInputRef.current) {
+      const editInputRef = useRef(null);
       editInputRef.current.focus();
       editInputRef.current.select();
     }
@@ -801,7 +805,85 @@ function App() {
     setTasks(updatedTasks);
   };
 
+  const selectTagSuggestion = (selectedTag) => {
+    if (!textareaRef.current) return;
+    const { value, selectionStart } = textareaRef.current;
+
+    const textBeforeCursor = value.slice(0, selectionStart);
+    const lastWordStartIndex = textBeforeCursor.search(/#\S*$/);
+    const textAfterCursor = value.slice(selectionStart);
+
+    const newValue =
+      value.slice(0, lastWordStartIndex) +
+      '#' +
+      selectedTag +
+      ' ' +
+      textAfterCursor;
+
+    setInputValue(newValue);
+    setShowTagSuggestions(false);
+
+    // Refocus and set cursor position
+    setTimeout(() => {
+      if (!textareaRef.current) return;
+      const newCursorPosition = (value.slice(0, lastWordStartIndex) + '#' + selectedTag + ' ').length;
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(newCursorPosition, newCursorPosition);
+    }, 0);
+  };
+
+  const handleInputChange = (e) => {
+    const { value, selectionStart } = e.target;
+    setInputValue(value);
+
+    // Find the word the cursor is currently in or at the end of
+    const textBeforeCursor = value.slice(0, selectionStart);
+    const lastWordStartIndex = textBeforeCursor.search(/#\S*$/);
+
+    if (lastWordStartIndex !== -1) {
+      const currentTagQuery = textBeforeCursor.slice(lastWordStartIndex + 1);
+      const suggestions = allTags
+        .map(([tag]) => tag)
+        .filter(tag =>
+          tag.toLowerCase().startsWith(currentTagQuery.toLowerCase())
+        );
+
+      if (suggestions.length > 0) {
+        setTagSuggestions(suggestions);
+        setShowTagSuggestions(true);
+        setHighlightedTagIndex(0); // Reset to first item
+      } else {
+        setShowTagSuggestions(false);
+      }
+    } else {
+      setShowTagSuggestions(false);
+    }
+  };
+
   const handleKeyPress = (e) => {
+    if (showTagSuggestions && tagSuggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setHighlightedTagIndex(prev => (prev + 1) % tagSuggestions.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setHighlightedTagIndex(prev => (prev - 1 + tagSuggestions.length) % tagSuggestions.length);
+        return;
+      }
+      if ((e.key === 'Enter' || e.key === 'Tab') && !e.shiftKey) {
+        e.preventDefault();
+        selectTagSuggestion(tagSuggestions[highlightedTagIndex]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowTagSuggestions(false);
+        return;
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       addTask();
@@ -998,6 +1080,19 @@ function App() {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [showSettings, editingTask]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        textareaRef.current && !textareaRef.current.contains(event.target) &&
+        suggestionsRef.current && !suggestionsRef.current.contains(event.target)
+      ) {
+        setShowTagSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const getTaskListHeaderText = () => {
     if (selectedTag) {
@@ -1501,10 +1596,31 @@ function App() {
               {!showArchived && (
                 <div className="mt-6">
                   <div className="relative">
+                    {showTagSuggestions && tagSuggestions.length > 0 && (
+                      <div ref={suggestionsRef} className="absolute bottom-full mb-2 w-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                        <ul className="p-1">
+                          {tagSuggestions.map((tag, index) => (
+                            <li key={tag}>
+                              <button
+                                onClick={() => selectTagSuggestion(tag)}
+                                onMouseOver={() => setHighlightedTagIndex(index)}
+                                className={`w-full text-left px-3 py-2 rounded-md text-sm ${
+                                  index === highlightedTagIndex
+                                    ? 'bg-[var(--color-button-secondary-hover)] text-[var(--color-text-primary)]'
+                                    : 'text-[var(--color-text-secondary)]'
+                                  } hover:bg-[var(--color-button-secondary-hover)]`}
+                              >
+                                #{tag}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     <textarea
                       ref={textareaRef}
                       value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
+                      onChange={handleInputChange}
                       onKeyDown={handleKeyPress}
                       // disabled={selectedDate.getTime() < new Date().getTime()} TODO!
                       placeholder="Add a new task..."
@@ -1697,7 +1813,7 @@ function App() {
                             <div className="flex-1">
                               {editingTask === task.id ? (
                                 <div className="w-full">
-                                  <textarea
+                                  <textarea // TODO: This is the edit input, not the main one.
                                     ref={editInputRef}
                                     value={editText}
                                     onChange={(e) => setEditText(e.target.value)}
