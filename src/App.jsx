@@ -17,8 +17,8 @@ const hexToHSL = (hex) => {
   }
   r /= 255; g /= 255; b /= 255;
   const cmin = Math.min(r, g, b),
-        cmax = Math.max(r, g, b),
-        delta = cmax - cmin;
+    cmax = Math.max(r, g, b),
+    delta = cmax - cmin;
   let h = 0, s = 0, l = 0;
 
   if (delta === 0) h = 0;
@@ -40,56 +40,56 @@ const hexToHSL = (hex) => {
 const hslToCss = (h, s, l, a = 1) => `hsl(${h} ${s}% ${l}% / ${a})`;
 
 const generateTonalPalette = (h, s) => {
-    const tones = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99, 100];
-    const palette = {};
-    for (const tone of tones) {
-        palette[tone] = hslToCss(h, s, tone);
-    }
-    return palette;
+  const tones = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99, 100];
+  const palette = {};
+  for (const tone of tones) {
+    palette[tone] = hslToCss(h, s, tone);
+  }
+  return palette;
 };
 
 const generateM3Scheme = (sourceHex) => {
-    const primaryHSL = hexToHSL(sourceHex);
-    const secondaryHSL = { h: (primaryHSL.h + 60) % 360, s: Math.max(10, primaryHSL.s * 0.35), l: primaryHSL.l };
-    const tertiaryHSL = { h: (primaryHSL.h - 60 + 360) % 360, s: Math.max(20, primaryHSL.s * 0.75), l: primaryHSL.l };
-    const neutralHSL = { h: primaryHSL.h, s: Math.max(2, primaryHSL.s * 0.1), l: primaryHSL.l };
-    const neutralVariantHSL = { h: primaryHSL.h, s: Math.max(5, primaryHSL.s * 0.2), l: primaryHSL.l };
-    const errorHSL = { h: 25, s: 84, l: 50 };
+  const primaryHSL = hexToHSL(sourceHex);
+  const secondaryHSL = { h: (primaryHSL.h + 60) % 360, s: Math.max(10, primaryHSL.s * 0.35), l: primaryHSL.l };
+  const tertiaryHSL = { h: (primaryHSL.h - 60 + 360) % 360, s: Math.max(20, primaryHSL.s * 0.75), l: primaryHSL.l };
+  const neutralHSL = { h: primaryHSL.h, s: Math.max(2, primaryHSL.s * 0.1), l: primaryHSL.l };
+  const neutralVariantHSL = { h: primaryHSL.h, s: Math.max(5, primaryHSL.s * 0.2), l: primaryHSL.l };
+  const errorHSL = { h: 25, s: 84, l: 50 };
 
-    const pPalette = generateTonalPalette(primaryHSL.h, primaryHSL.s);
-    const sPalette = generateTonalPalette(secondaryHSL.h, secondaryHSL.s);
-    const tPalette = generateTonalPalette(tertiaryHSL.h, tertiaryHSL.s);
-    const nPalette = generateTonalPalette(neutralHSL.h, neutralHSL.s);
-    const nvPalette = generateTonalPalette(neutralVariantHSL.h, neutralVariantHSL.s);
-    const ePalette = generateTonalPalette(errorHSL.h, errorHSL.s);
+  const pPalette = generateTonalPalette(primaryHSL.h, primaryHSL.s);
+  const sPalette = generateTonalPalette(secondaryHSL.h, secondaryHSL.s);
+  const tPalette = generateTonalPalette(tertiaryHSL.h, tertiaryHSL.s);
+  const nPalette = generateTonalPalette(neutralHSL.h, neutralHSL.s);
+  const nvPalette = generateTonalPalette(neutralVariantHSL.h, neutralVariantHSL.s);
+  const ePalette = generateTonalPalette(errorHSL.h, errorHSL.s);
 
-    // Light theme color roles from Material Design 3
-    return {
-        primary: pPalette[40],
-        onPrimary: pPalette[100],
-        primaryContainer: pPalette[90],
-        onPrimaryContainer: pPalette[10],
-        secondary: sPalette[40],
-        onSecondary: sPalette[100],
-        secondaryContainer: sPalette[90],
-        onSecondaryContainer: sPalette[10],
-        tertiary: tPalette[40],
-        onTertiary: tPalette[100],
-        tertiaryContainer: tPalette[90],
-        onTertiaryContainer: tPalette[10],
-        error: ePalette[40],
-        onError: ePalette[100],
-        errorContainer: ePalette[90],
-        onErrorContainer: ePalette[10],
-        background: nPalette[99],
-        onBackground: nPalette[10],
-        surface: nPalette[99],
-        onSurface: nPalette[10],
-        surfaceVariant: nvPalette[90],
-        onSurfaceVariant: nvPalette[30],
-        outline: nvPalette[50],
-        outlineVariant: nvPalette[80],
-    };
+  // Light theme color roles from Material Design 3
+  return {
+    primary: pPalette[40],
+    onPrimary: pPalette[100],
+    primaryContainer: pPalette[90],
+    onPrimaryContainer: pPalette[10],
+    secondary: sPalette[40],
+    onSecondary: sPalette[100],
+    secondaryContainer: sPalette[90],
+    onSecondaryContainer: sPalette[10],
+    tertiary: tPalette[40],
+    onTertiary: tPalette[100],
+    tertiaryContainer: tPalette[90],
+    onTertiaryContainer: tPalette[10],
+    error: ePalette[40],
+    onError: ePalette[100],
+    errorContainer: ePalette[90],
+    onErrorContainer: ePalette[10],
+    background: nPalette[99],
+    onBackground: nPalette[10],
+    surface: nPalette[99],
+    onSurface: nPalette[10],
+    surfaceVariant: nvPalette[90],
+    onSurfaceVariant: nvPalette[30],
+    outline: nvPalette[50],
+    outlineVariant: nvPalette[80],
+  };
 };
 
 const MiniPomodoroTimer = ({ pomodoro }) => {
@@ -103,12 +103,12 @@ const MiniPomodoroTimer = ({ pomodoro }) => {
     <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
       <div className="flex justify-between items-center text-xs mb-1.5 text-[var(--color-text-secondary)]">
         <span className="font-semibold flex items-center gap-1.5">
-            {isWork ? (
-              <Flame size={14} className="text-orange-500 animate-pulse" />
-            ) : (
-              <Coffee size={14} className="text-cyan-500" />
-            )}
-            <span>{isWork ? 'Focus Session' : 'On a Break'}</span>
+          {isWork ? (
+            <Flame size={14} className="text-orange-500 animate-pulse" />
+          ) : (
+            <Coffee size={14} className="text-cyan-500" />
+          )}
+          <span>{isWork ? 'Focus Session' : 'On a Break'}</span>
         </span>
         <span className="font-mono font-bold text-base text-[var(--color-text-primary)]">{minutes}:{seconds}</span>
       </div>
@@ -143,6 +143,8 @@ function App() {
   const [isUrgent, setIsUrgent] = useState(false); // For new tasks
   const [isImportant, setIsImportant] = useState(false); // For new tasks
   const [viewMode, setViewMode] = useState('list'); // 'list', 'matrix', or 'planner'
+  const [timeFilterMode, setTimeFilterMode] = useState('day'); // 'day', 'month', 'quarter', 'year', 'all'
+  const [calendarViewMode, setCalendarViewMode] = useState('days'); // 'days', 'months', 'years'
   const [editingTask, setEditingTask] = useState(null);
   const [editText, setEditText] = useState('');
   const textareaRef = useRef(null);
@@ -404,7 +406,7 @@ function App() {
               settingsStore.put({ id: 'theme', value: 'purple' });
               settingsStore.put({ id: 'weekStart', value: 0 }); // Sunday by default
               settingsStore.put({ id: 'hideGlobal', value: false });
-              settingsStore.put({ id: 'hideLocal', value: false });              settingsStore.put({ id: 'customColor', value: '#8b5cf6' });
+              settingsStore.put({ id: 'hideLocal', value: false }); settingsStore.put({ id: 'customColor', value: '#8b5cf6' });
               settingsStore.put({ id: 'nsfwTags', value: '' });
             }
 
@@ -818,30 +820,57 @@ function App() {
     return (firstDay - weekStart + 7) % 7;
   };
 
-  const prevMonth = () => {
-    const today = new Date();
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1, today.getHours(), today.getMinutes(), today.getSeconds()));
+  const handleCalendarNav = (direction) => {
+    const newDate = new Date(currentDate);
+    if (calendarViewMode === 'days') {
+      newDate.setMonth(newDate.getMonth() + direction);
+    } else if (calendarViewMode === 'months') {
+      newDate.setFullYear(newDate.getFullYear() + direction);
+    } else if (calendarViewMode === 'years') {
+      newDate.setFullYear(newDate.getFullYear() + (direction * 12));
+    }
+    setCurrentDate(newDate);
   };
 
-  const nextMonth = () => {
-    const today = new Date();
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1, today.getHours(), today.getMinutes(), today.getSeconds()));
+  const handleCalendarHeaderClick = () => {
+    if (calendarViewMode === 'days') {
+      setCalendarViewMode('months');
+    } else if (calendarViewMode === 'months') {
+      setCalendarViewMode('years');
+    }
   };
 
   const selectDate = (day) => {
     const today = new Date();
     const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day, today.getHours(), today.getMinutes(), today.getSeconds());
     setSelectedDate(newDate);
+    setTimeFilterMode('day');
+  };
+
+  const selectMonth = (monthIndex) => {
+    const newDate = new Date(currentDate.getFullYear(), monthIndex, 1);
+    setCurrentDate(newDate);
+    setSelectedDate(newDate);
+    // User stays in the month/quarter view to allow selecting different periods
+    // without the view changing.
+  };
+
+  const selectYear = (year) => {
+    const newDate = new Date(year, currentDate.getMonth(), 1);
+    setCurrentDate(newDate);
+    setSelectedDate(newDate);
+    // User stays in the year view to allow selecting different years.
   };
 
   const goToToday = () => {
     const today = new Date();
     setCurrentDate(today);
     setSelectedDate(today);
+    setCalendarViewMode('days');
   };
 
   // Filter tasks by selected date
-  const filteredTasks = tasks.filter(task => {
+  const filteredTasks = React.useMemo(() => tasks.filter(task => {
     // Hide global/local tasks if setting is enabled
     if (hideGlobal && task.pinned === 'global') return false;
     if (hideLocal && task.pinned === 'local') return false;
@@ -859,11 +888,30 @@ function App() {
       return true;
     }
 
-    // For all other tasks, check the due date.
-    if (!task.dueDate) return false;
+    if (!task.dueDate) {
+      return timeFilterMode === 'all';
+    }
     const taskDueDate = new Date(task.dueDate);
-    return taskDueDate.toDateString() === selectedDate.toDateString();
-  });
+
+    if (timeFilterMode === 'day') {
+      return taskDueDate.toDateString() === selectedDate.toDateString();
+    }
+
+    const now = selectedDate; // Use selectedDate as the reference for month/quarter/year
+    const taskYear = taskDueDate.getFullYear();
+    const taskMonth = taskDueDate.getMonth();
+    const taskQuarter = Math.floor(taskMonth / 3);
+
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentQuarter = Math.floor(currentMonth / 3);
+
+    if (timeFilterMode === 'month') return taskYear === currentYear && taskMonth === currentMonth;
+    if (timeFilterMode === 'quarter') return taskYear === currentYear && taskQuarter === currentQuarter;
+    if (timeFilterMode === 'year') return taskYear === currentYear;
+    if (timeFilterMode === 'all') return true;
+    return false;
+  }), [tasks, hideGlobal, hideLocal, selectedTag, selectedDate, timeFilterMode]);
 
   // Sort tasks: pinned first, then others
   const sortedTasks = [...filteredTasks].sort((a, b) => {
@@ -951,6 +999,31 @@ function App() {
     };
   }, [showSettings, editingTask]);
 
+  const getTaskListHeaderText = () => {
+    if (selectedTag) {
+      return `Tasks with #${selectedTag}`;
+    }
+
+    const now = selectedDate;
+    const monthName = formatDate(now, { month: 'long' });
+    const year = now.getFullYear();
+    const quarter = Math.floor(now.getMonth() / 3) + 1;
+
+    switch (timeFilterMode) {
+      case 'day':
+        return formatDate(selectedDate);
+      case 'month':
+        return `Tasks for ${monthName} ${year}`;
+      case 'quarter':
+        return `Tasks for Q${quarter} ${year}`;
+      case 'year':
+        return `Tasks for ${year}`;
+      case 'all':
+        return 'All Tasks';
+      default:
+        return formatDate(selectedDate);
+    }
+  };
   // Handle double click to edit task
   const handleDoubleClick = (task) => {
     setEditingTask(task.id);
@@ -1214,72 +1287,160 @@ function App() {
 
               {/* Calendar */}
               <div className="bg-[var(--color-bg-secondary)] rounded-xl p-4 mb-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold text-[var(--color-text-primary)]">
-                    {formatDate(currentDate, { month: 'long', year: 'numeric' })}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={prevMonth}
-                      className="p-2 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]"
-                    >
-                      &lt;
-                    </button>
-                    <button
-                      onClick={goToToday}
-                      className="p-2 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)] text-sm"
-                    >
-                      Today
-                    </button>
-                    <button
-                      onClick={nextMonth}
-                      className="p-2 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]"
-                    >
-                      &gt;
-                    </button>
+                {/* Time Range Filter */}
+                {!showArchived && (
+                  <div className="mb-6">
+                    <div className="flex flex-wrap gap-1 p-1 bg-[var(--color-bg-secondary)] rounded-lg">
+                      {[
+                        { id: 'day', label: 'Day' },
+                        { id: 'month', label: 'Month' },
+                        { id: 'quarter', label: 'Quarter' },
+                        { id: 'year', label: 'Year' },
+                        { id: 'all', label: 'All Time' },
+                      ].map(filter => (
+                        <button
+                          key={filter.id}
+                          onClick={() => {
+                            setTimeFilterMode(filter.id);
+                            if (filter.id === 'day') setCalendarViewMode('days');
+                            else if (filter.id === 'month' || filter.id === 'quarter') setCalendarViewMode('months');
+                            else if (filter.id === 'year') setCalendarViewMode('years');
+                            else setCalendarViewMode('days'); // Default for 'All Time'
+                          }}
+                          className={`px-2 py-1 text-sm rounded-md transition-colors flex-1 text-center ${timeFilterMode === filter.id
+                            ? 'bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)] shadow'
+                            : 'hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]'
+                            }`}
+                        >{filter.label}</button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {calendarViewMode === 'days' && timeFilterMode != 'all' && (
+                  <div className="flex justify-between items-center mb-4">
+                    <h3>
+                      {formatDate(currentDate, { month: 'long', year: 'numeric' })}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleCalendarNav(-1)}
+                        className="p-2 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]"
+                        title="Previous"
+                      >
+                        &lt;
+                      </button>
+                      <button
+                        onClick={goToToday}
+                        className="p-2 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)] text-sm"
+                        title="Go to Today"
+                      >
+                        Today
+                      </button>
+                      <button
+                        onClick={() => handleCalendarNav(1)}
+                        className="p-2 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]"
+                        title="Next"
+                      >
+                        &gt;
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-7 gap-1 mb-2">
-                  {getWeekdayNames().map((day, index) => (
+                  {calendarViewMode === 'days' && getWeekdayNames().map((day, index) => (
                     <div key={index} className="text-center text-[var(--color-text-secondary)] text-sm font-medium py-1">
                       {day}
                     </div>
                   ))}
                 </div>
 
-                <div className="grid grid-cols-7 gap-1">
-                  {[...Array(getFirstDayOfMonth(currentDate)).keys()].map(i => (
-                    <div key={`empty-${i}`} className="h-10"></div>
-                  ))}
+                {calendarViewMode === 'days' && (
+                  <div className="grid grid-cols-7 gap-1">
+                    {[...Array(getFirstDayOfMonth(currentDate)).keys()].map(i => (
+                      <div key={`empty-${i}`} className="h-10"></div>
+                    ))}
+                    {[...Array(getDaysInMonth(currentDate)).keys()].map(i => {
+                      const day = i + 1;
+                      const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                      const isToday = date.toDateString() === new Date().toDateString();
+                      const isSelected = timeFilterMode === 'day' && date.toDateString() === selectedDate.toDateString();
+                      const taskCount = getTasksForDate(date);
+                      return (
+                        <button
+                          key={day}
+                          onClick={() => selectDate(day)}
+                          className={`h-10 rounded-lg flex flex-col items-center justify-center text-sm transition-colors relative ${isSelected
+                            ? 'bg-[var(--color-calendar-selected)] text-[var(--color-text-on-primary)]'
+                            : isToday ? 'bg-[var(--color-calendar-today)] border-2 border-[var(--color-calendar-selected)]' : 'hover:bg-[var(--color-calendar-hover)]'
+                            } ${taskCount > 0 ? 'font-bold' : ''}`}
+                        >
+                          <span>{day}</span>
+                          {taskCount > 0 && (
+                            <span className={`text-xs ${isSelected ? 'text-[var(--color-text-on-primary)] text-opacity-80' : 'text-[var(--color-text-secondary)]'}`}>
+                              {taskCount}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
-                  {[...Array(getDaysInMonth(currentDate)).keys()].map(i => {
-                    const day = i + 1;
-                    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-                    const isToday = date.toDateString() === new Date().toDateString();
-                    const isSelected = date.toDateString() === selectedDate.toDateString();
-                    const taskCount = getTasksForDate(date);
+                {calendarViewMode === 'months' && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {[...Array(12).keys()].map(monthIndex => {
+                      const monthDate = new Date(currentDate.getFullYear(), monthIndex, 1);
+                      const selectedYear = selectedDate.getFullYear();
+                      const selectedMonth = selectedDate.getMonth();
+                      const selectedQuarter = Math.floor(selectedMonth / 3);
+                      const currentYear = monthDate.getFullYear();
+                      const currentMonth = monthDate.getMonth();
+                      const currentQuarter = Math.floor(currentMonth / 3);
 
-                    return (
-                      <button
-                        key={day}
-                        onClick={() => selectDate(day)}
-                        className={`h-10 rounded-lg flex flex-col items-center justify-center text-sm transition-colors relative ${isSelected
-                          ? 'bg-[var(--color-calendar-selected)] text-[var(--color-text-on-primary)]'
-                          : isToday ? 'bg-[var(--color-calendar-today)] border-2 border-[var(--color-calendar-selected)]' : 'hover:bg-[var(--color-calendar-hover)]'
-                          }
-                          ${taskCount > 0 ? 'font-bold' : ''}`}
-                      >
-                        <span>{day}</span>
-                        {taskCount > 0 && (
-                          <span className={`text-xs ${isSelected ? 'text-[var(--color-text-on-primary)] text-opacity-80' : 'text-[var(--color-text-secondary)]'}`}>
-                            {taskCount}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+                      let isSelected = false;
+                      if (currentYear === selectedYear) {
+                        if (timeFilterMode === 'month' && currentMonth === selectedMonth) isSelected = true;
+                        if (timeFilterMode === 'quarter' && currentQuarter === selectedQuarter) isSelected = true;
+                      }
+                      return (
+                        <button
+                          key={monthIndex}
+                          onClick={() => selectMonth(monthIndex)}
+                          className={`py-4 rounded-lg text-center transition-colors ${isSelected
+                            ? 'bg-[var(--color-calendar-selected)] text-[var(--color-text-on-primary)]'
+                            : 'hover:bg-[var(--color-calendar-hover)]'
+                            }`}
+                        >
+                          {formatDate(monthDate, { month: 'short' })}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {calendarViewMode === 'years' && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {[...Array(12).keys()].map(i => {
+                      const startYear = Math.floor(currentDate.getFullYear() / 12) * 12;
+                      const year = startYear + i;
+                      const isSelected = timeFilterMode === 'year' && year === selectedDate.getFullYear();
+                      return (
+                        <button
+                          key={year}
+                          onClick={() => selectYear(year)}
+                          className={`py-4 rounded-lg text-center transition-colors ${isSelected
+                            ? 'bg-[var(--color-calendar-selected)] text-[var(--color-text-on-primary)]'
+                            : 'hover:bg-[var(--color-calendar-hover)]'
+                            }`}
+                        >
+                          {year}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {!showArchived && (
@@ -1498,9 +1659,7 @@ function App() {
               <div className="bg-[var(--color-bg-primary)] rounded-2xl shadow-lg p-6">
                 <div className="mb-4">
                   <p className="text-[var(--color-text-secondary)]">
-                    {selectedTag
-                      ? `Tasks with #${selectedTag} - ${activeTasks.length} tasks`
-                      : `${formatDate(selectedDate)} - ${activeTasks.length} tasks`}
+                    {getTaskListHeaderText()} - {activeTasks.length} tasks
                   </p>
                 </div>
                 {sortedTasks.length === 0 ? (
@@ -1651,9 +1810,7 @@ function App() {
                 <div className="mb-4">
 
                   <p className="text-[var(--color-text-secondary)]">
-                    {selectedTag
-                      ? `Tasks with #${selectedTag} - ${activeTasks.length} tasks`
-                      : `${formatDate(selectedDate)} - ${activeTasks.length} tasks`}
+                    {getTaskListHeaderText()} - {activeTasks.length} tasks
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:h-[70vh]">
