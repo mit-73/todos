@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Check, Pin, PinOff, Archive, List, Send, Shield, Settings, X, Eye, EyeOff, LoaderCircle, Star, Grid, Flame, Clock, Edit3, ChevronLeft } from 'lucide-react';
+import { Plus, Trash2, Check, Pin, PinOff, Archive, List, Send, Shield, Settings, X, Eye, EyeOff, LoaderCircle, Star, Grid, Flame, Clock, Edit3, ChevronLeft, Play, Pause, RotateCcw, Coffee } from 'lucide-react';
 
 // --- Material 3-inspired Color System ---
 
@@ -92,6 +92,33 @@ const generateM3Scheme = (sourceHex) => {
     };
 };
 
+const MiniPomodoroTimer = ({ pomodoro }) => {
+  const { timeLeft, duration, mode } = pomodoro;
+  const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+  const seconds = (timeLeft % 60).toString().padStart(2, '0');
+  const progress = duration > 0 ? ((duration - timeLeft) / duration) * 100 : 0;
+  const isWork = mode === 'work';
+
+  return (
+    <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
+      <div className="flex justify-between items-center text-xs mb-1.5 text-[var(--color-text-secondary)]">
+        <span className="font-semibold flex items-center gap-1.5">
+            {isWork ? (
+              <Flame size={14} className="text-orange-500 animate-pulse" />
+            ) : (
+              <Coffee size={14} className="text-cyan-500" />
+            )}
+            <span>{isWork ? 'Focus Session' : 'On a Break'}</span>
+        </span>
+        <span className="font-mono font-bold text-base text-[var(--color-text-primary)]">{minutes}:{seconds}</span>
+      </div>
+      <div className="w-full bg-[var(--color-border)] rounded-full h-2">
+        <div className={`${isWork ? 'bg-[var(--color-button-primary)]' : 'bg-cyan-500'} h-2 rounded-full transition-all duration-500`} style={{ width: `${progress}%` }}></div>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const [tasks, setTasks] = useState([]);
   const [archivedTasks, setArchivedTasks] = useState([]);
@@ -125,6 +152,95 @@ function App() {
   const [plannerBlocks, setPlannerBlocks] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  const initialPomodoroState = {
+    isActive: false,
+    isPaused: true,
+    blockId: null,
+    mode: 'work', // 'work' or 'break'
+    timeLeft: 0,
+    duration: 0,
+    queue: [],
+    currentSliceIndex: -1,
+  };
+
+  // --- Pomodoro State (Global) ---
+  const [pomodoro, setPomodoro] = useState(initialPomodoroState);
+
+  const playSound = (soundFile) => {
+    try {
+      // NOTE: You need to place sound files in your public folder, e.g., /public/sounds/
+      const audio = new Audio(soundFile);
+      audio.play();
+    } catch (e) {
+      console.error("Could not play sound. Make sure the sound file exists in the public folder.", e);
+    }
+  };
+
+  const startPomodoro = (blockId) => {
+    const block = plannerBlocks.find(b => b.id === blockId);
+    if (!block) return;
+
+    const now = new Date();
+    const [endHours, endMinutes] = block.endTime.split(':').map(Number);
+    const endBlock = new Date(now);
+    endBlock.setHours(endHours, endMinutes, 0, 0);
+
+    let remainingSeconds = Math.floor((endBlock.getTime() - now.getTime()) / 1000);
+    if (remainingSeconds <= 60) { // Don't start if less than a minute left
+      alert("Not enough time in the block to start a focus session.");
+      return;
+    }
+
+    const workSeconds = (workSettings.pomodoroWorkDuration || 25) * 60;
+    const breakSeconds = (workSettings.pomodoroBreakDuration || 5) * 60;
+    const newQueue = [];
+
+    while (remainingSeconds >= workSeconds) {
+      newQueue.push({ mode: 'work', duration: workSeconds });
+      remainingSeconds -= workSeconds;
+
+      if (remainingSeconds > 0) {
+        const currentBreakDuration = Math.min(remainingSeconds, breakSeconds);
+        newQueue.push({ mode: 'break', duration: currentBreakDuration });
+        remainingSeconds -= currentBreakDuration;
+      }
+    }
+
+    if (remainingSeconds > 60) {
+      newQueue.push({ mode: 'work', duration: remainingSeconds });
+    }
+
+    if (newQueue.length === 0) {
+      newQueue.push({ mode: 'work', duration: remainingSeconds });
+    }
+
+    const firstSlice = newQueue[0];
+    playSound('/sounds/work-start.mp3');
+    setPomodoro({
+      isActive: true,
+      isPaused: false,
+      blockId: blockId,
+      mode: firstSlice.mode,
+      timeLeft: firstSlice.duration,
+      duration: firstSlice.duration,
+      queue: newQueue,
+      currentSliceIndex: 0,
+    });
+  };
+
+  const handlePauseResumePomodoro = () => {
+    setPomodoro(p => ({ ...p, isPaused: !p.isPaused }));
+  };
+
+  const resetPomodoro = (confirm = false) => {
+    if (confirm && pomodoro.isActive && !window.confirm('Are you sure you want to stop the focus session?')) {
+      return;
+    }
+    setPomodoro(initialPomodoroState);
+  };
+
+  const handleResetPomodoro = () => resetPomodoro(true);
+
   const activePlannerBlocks = React.useMemo(() => {
     const now = currentTime;
     return plannerBlocks.filter(block => {
@@ -145,6 +261,8 @@ function App() {
   const [workSettings, setWorkSettings] = useState({
     startTime: '09:00',
     endTime: '18:00',
+    pomodoroWorkDuration: 25,
+    pomodoroBreakDuration: 5,
   });
 
   // Base theme colors
@@ -416,6 +534,59 @@ function App() {
     setWorkSettings(newSettings);
     savePlannerSettingsToDB(newSettings);
   };
+
+  useEffect(() => {
+    if (!pomodoro.isActive || pomodoro.isPaused) return;
+
+    const interval = setInterval(() => {
+      // Check if the block itself has ended or was deleted, which forces the session to stop.
+      const associatedBlock = plannerBlocks.find(b => b.id === pomodoro.blockId);
+      if (associatedBlock) {
+        const now = new Date();
+        const [endHours, endMinutes] = associatedBlock.endTime.split(':').map(Number);
+        const endBlock = new Date(now);
+        endBlock.setHours(endHours, endMinutes, 0, 0);
+        if (now >= endBlock) {
+          clearInterval(interval);
+          alert('Focus session stopped because the scheduled block has ended.');
+          resetPomodoro(false);
+          return;
+        }
+      } else { // Block was deleted
+        clearInterval(interval);
+        resetPomodoro(false);
+        return;
+      }
+
+      setPomodoro(p => {
+        if (p.timeLeft > 1) {
+          return { ...p, timeLeft: p.timeLeft - 1 };
+        }
+
+        // Time's up for the current slice, transition to the next
+        const nextSliceIndex = p.currentSliceIndex + 1;
+        if (nextSliceIndex >= p.queue.length) {
+          clearInterval(interval);
+          playSound('/sounds/session-end.mp3');
+          alert('Full focus session complete!');
+          return initialPomodoroState;
+        }
+
+        const nextSlice = p.queue[nextSliceIndex];
+        playSound(nextSlice.mode === 'work' ? '/sounds/work-start.mp3' : '/sounds/break-start.mp3');
+
+        return {
+          ...p,
+          currentSliceIndex: nextSliceIndex,
+          mode: nextSlice.mode,
+          timeLeft: nextSlice.duration,
+          duration: nextSlice.duration,
+        };
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [pomodoro.isActive, pomodoro.isPaused, pomodoro.blockId, plannerBlocks, initialPomodoroState]);
   // --- End Planner DB Functions ---
 
 
@@ -926,7 +1097,21 @@ function App() {
   }, [activeTasks]);
 
   if (viewMode === 'planner') {
-    return <DayPlannerView {...{ plannerBlocks, setPlannerBlocks, workSettings, setWorkSettings: handleSavePlannerSettings, currentTime, locale, savePlannerBlockToDB, deletePlannerBlockFromDB, setViewMode }} />;
+    return <DayPlannerView
+      plannerBlocks={plannerBlocks}
+      setPlannerBlocks={setPlannerBlocks}
+      workSettings={workSettings}
+      setWorkSettings={handleSavePlannerSettings}
+      currentTime={currentTime}
+      locale={locale}
+      savePlannerBlockToDB={savePlannerBlockToDB}
+      deletePlannerBlockFromDB={deletePlannerBlockFromDB}
+      setViewMode={setViewMode}
+      pomodoro={pomodoro}
+      startPomodoro={startPomodoro}
+      handlePauseResumePomodoro={handlePauseResumePomodoro}
+      handleResetPomodoro={handleResetPomodoro}
+    />;
   }
 
   if (isLoading) {
@@ -977,7 +1162,7 @@ function App() {
                       return (
                         <div key={block.id}>
                           <div className="flex justify-between items-center text-sm mb-1">
-                            <span className="font-semibold text-[var(--color-text-primary)] truncate pr-2">{block.title}</span>
+                            <span className="font-semibold text-[var(--color-text-primary)] truncate pr-2" title={block.title}>{block.title}</span>
                             <span className="text-[var(--color-text-muted)] flex-shrink-0">{block.startTime} - {block.endTime}</span>
                           </div>
                           <div className="w-full bg-[var(--color-border)] rounded-full h-2">
@@ -992,7 +1177,10 @@ function App() {
                     <p>No active block. Time to plan!</p>
                   </div>
                 )}
+                {pomodoro.isActive && <MiniPomodoroTimer pomodoro={pomodoro} />}
               </div>
+
+              {/* Global Pomodoro Timer is now inside the planner preview */}
               <div className="flex flex-row gap-4 mb-4">
                 <div className="flex-1 grid grid-cols-2 gap-2">
                   <button
@@ -1695,6 +1883,46 @@ function App() {
   );
 }
 
+const PomodoroTimer = ({ pomodoro, onPauseResume, onReset, blockTitle }) => {
+  const { timeLeft, duration, isPaused, isActive, mode, queue, currentSliceIndex } = pomodoro;
+
+  if (!isActive) {
+    return null;
+  }
+
+  const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+  const seconds = (timeLeft % 60).toString().padStart(2, '0');
+  const progress = duration > 0 ? ((duration - timeLeft) / duration) * 100 : 0;
+  const isWork = mode === 'work';
+  const title = isWork ? 'Focus Session' : 'Break Time';
+  const progressColor = isWork ? 'var(--color-button-primary)' : 'var(--color-select-hover)';
+
+  return (
+    <div className="mt-4 p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+      <h4 className="text-sm font-semibold text-[var(--color-text-secondary)] mb-2 flex items-center gap-2">
+        {isWork ? <Flame size={16} /> : <Coffee size={16} />}
+        {title}
+        {queue.length > 0 && <span className="text-xs font-mono">({currentSliceIndex + 1}/{queue.length})</span>}
+      </h4>
+      <p className="text-xs text-[var(--color-text-muted)] mb-3 truncate" title={blockTitle}>On: {blockTitle}</p>
+      <div className="text-center font-mono text-5xl font-bold text-[var(--color-text-primary)] my-4">
+        {minutes}:{seconds}
+      </div>
+      <div className="w-full bg-[var(--color-border)] rounded-full h-2 mb-4">
+        <div className="h-2 rounded-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: progressColor }}></div>
+      </div>
+      <div className="flex justify-center gap-4">
+        <button onClick={onPauseResume} className="p-3 rounded-full bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-button-primary-hover)]" title={isPaused ? "Resume" : "Pause"}>
+          {isPaused ? <Play size={20} /> : <Pause size={20} />}
+        </button>
+        <button onClick={onReset} className="p-3 rounded-full bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]" title="Reset">
+          <RotateCcw size={20} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // --- Planner Layout Helpers ---
 const timeToMinutes = (timeStr) => {
   if (!timeStr || !timeStr.includes(':')) return 0;
@@ -1758,7 +1986,7 @@ const getLayoutForPlannerBlocks = (blocks) => {
   return laidOutBlocks;
 };
 
-const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWorkSettings, currentTime, locale, savePlannerBlockToDB, deletePlannerBlockFromDB, setViewMode }) => {
+const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWorkSettings, currentTime, locale, savePlannerBlockToDB, deletePlannerBlockFromDB, setViewMode, pomodoro, startPomodoro, handlePauseResumePomodoro, handleResetPomodoro }) => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showAddBlockModal, setShowAddBlockModal] = useState(false);
   const [newBlockData, setNewBlockData] = useState({
@@ -1768,6 +1996,11 @@ const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWork
     color: 'bg-blue-500'
   });
   const [editingBlock, setEditingBlock] = useState(null);
+  const [modalSettings, setModalSettings] = useState(workSettings);
+
+  useEffect(() => {
+    setModalSettings(workSettings);
+  }, [workSettings]);
 
   const laidOutBlocks = React.useMemo(() => getLayoutForPlannerBlocks(plannerBlocks), [plannerBlocks]);
 
@@ -1853,7 +2086,7 @@ const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWork
   };
 
   const handleSaveSettings = () => {
-    setWorkSettings(workSettings);
+    setWorkSettings(modalSettings);
     setShowSettingsModal(false);
   };
 
@@ -1900,11 +2133,19 @@ const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWork
                 </div>
                 {/* Settings Button */}
                 <button
-                  onClick={() => setShowSettingsModal(true)}
+                  onClick={() => { setModalSettings(workSettings); setShowSettingsModal(true); }}
                   className="p-4 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]"
                 >
                   <Settings size={20} />
                 </button>
+              </div>
+              <div>
+                <PomodoroTimer
+                  pomodoro={pomodoro}
+                  onPauseResume={handlePauseResumePomodoro}
+                  onReset={handleResetPomodoro}
+                  blockTitle={pomodoro.blockId ? plannerBlocks.find(b => b.id === pomodoro.blockId)?.title : ''}
+                />
               </div>
             </div>
           </div>
@@ -1929,14 +2170,19 @@ const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWork
                     ))}
                     {laidOutBlocks.map((block) => (
                       <div key={block.id} className={`absolute ${block.color} rounded-lg p-3 text-white shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer ${isCurrentBlock(block.startTime, block.endTime) ? 'ring-2 ring-white ring-opacity-50 ring-offset-2' : ''} ${block.layout.col > 0 ? 'border-l-2 border-white/20' : ''}`} style={{ top: `${timeToPosition(block.startTime)}px`, height: `${blockHeight(block.startTime, block.endTime)}px`, left: `${block.layout.left}%`, width: `calc(${block.layout.width}% - 2px)`, minHeight: '40px' }}>
-                        <div className="flex justify-between items-start">
-                          <div className="flex flex-wrap">
-                            <h3 className="font-semibold">{block.title}</h3>
-                            <p className="ml-2 text-xs opacity-90">{block.startTime} - {block.endTime}</p>
+                        <div className="flex justify-between items-start h-full w-full">
+                          <div className="flex-1 overflow-hidden">
+                            <h3 className="font-semibold truncate" title={block.title}>{block.title}</h3>
+                            <p className="text-xs opacity-90">{block.startTime} - {block.endTime}</p>
                           </div>
-                          <div className="flex space-x-1">
-                            <button onClick={(e) => { e.stopPropagation(); startEditBlock(block); }} className="p-1 hover:bg-white/20 rounded transition-colors"><Edit3 className="w-3 h-3" /></button>
-                            <button onClick={(e) => { e.stopPropagation(); deletePlannerBlock(block.id); }} className="p-1 hover:bg-white/20 rounded transition-colors"><Trash2 className="w-3 h-3" /></button>
+                          <div className="flex items-center space-x-1 flex-shrink-0 ml-2">
+                            {isCurrentBlock(block.startTime, block.endTime) && !pomodoro.isActive && (
+                              <button onClick={(e) => { e.stopPropagation(); startPomodoro(block.id); }} className="p-1 hover:bg-white/20 rounded-full transition-colors" title="Start Focus Session">
+                                <Play className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button onClick={(e) => { e.stopPropagation(); startEditBlock(block); }} className="p-1 hover:bg-white/20 rounded-full transition-colors" title="Edit Block"><Edit3 className="w-4 h-4" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); deletePlannerBlock(block.id); }} className="p-1 hover:bg-white/20 rounded-full transition-colors" title="Delete Block"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </div>
                         {isCurrentBlock(block.startTime, block.endTime) && (
@@ -2004,11 +2250,21 @@ const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWork
               <div className="space-y-4 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Work Day Start</label>
-                  <input type="time" value={workSettings.startTime} onChange={(e) => setWorkSettings({ ...workSettings, startTime: e.target.value })} className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent bg-[var(--color-bg-secondary)]" />
+                  <input type="time" value={modalSettings.startTime} onChange={(e) => setModalSettings({ ...modalSettings, startTime: e.target.value })} className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent bg-[var(--color-bg-secondary)]" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Work Day End</label>
-                  <input type="time" value={workSettings.endTime} onChange={(e) => setWorkSettings({ ...workSettings, endTime: e.target.value })} className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent bg-[var(--color-bg-secondary)]" />
+                  <input type="time" value={modalSettings.endTime} onChange={(e) => setModalSettings({ ...modalSettings, endTime: e.target.value })} className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent bg-[var(--color-bg-secondary)]" />
+                </div>
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[var(--color-border)]">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Work Session (min)</label>
+                    <input type="number" min="1" value={modalSettings.pomodoroWorkDuration} onChange={(e) => setModalSettings({ ...modalSettings, pomodoroWorkDuration: parseInt(e.target.value, 10) || 0 })} className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent bg-[var(--color-bg-secondary)]" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Break (min)</label>
+                    <input type="number" min="1" value={modalSettings.pomodoroBreakDuration} onChange={(e) => setModalSettings({ ...modalSettings, pomodoroBreakDuration: parseInt(e.target.value, 10) || 0 })} className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent bg-[var(--color-bg-secondary)]" />
+                  </div>
                 </div>
               </div>
               <div className="flex space-x-3">
