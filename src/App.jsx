@@ -1,98 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Check, Pin, PinOff, Archive, List, Send, Shield, Settings, X, Eye, EyeOff, LoaderCircle, Star, Grid, Flame, Clock, Edit3, ChevronLeft, Play, Pause, RotateCcw, Coffee } from 'lucide-react';
+import { Plus, Trash2, Check, Pin, PinOff, Archive, List, Send, Shield, Settings, X, Eye, EyeOff, LoaderCircle, Star, Grid, Flame, Clock, Edit3, ChevronLeft, Play, Square, Coffee, Sun, Moon, Monitor, ChevronDown } from 'lucide-react';
 
-// --- Material 3-inspired Color System ---
-
-const hexToHSL = (hex) => {
-  if (!hex || !hex.startsWith('#')) return { h: 0, s: 0, l: 0 };
-  let r = 0, g = 0, b = 0;
-  if (hex.length === 4) { // #rgb
-    r = parseInt(hex[1] + hex[1], 16);
-    g = parseInt(hex[2] + hex[2], 16);
-    b = parseInt(hex[3] + hex[3], 16);
-  } else if (hex.length === 7) { // #rrggbb
-    r = parseInt(hex.substring(1, 3), 16);
-    g = parseInt(hex.substring(3, 5), 16);
-    b = parseInt(hex.substring(5, 7), 16);
-  }
-  r /= 255; g /= 255; b /= 255;
-  const cmin = Math.min(r, g, b),
-    cmax = Math.max(r, g, b),
-    delta = cmax - cmin;
-  let h = 0, s = 0, l = 0;
-
-  if (delta === 0) h = 0;
-  else if (cmax === r) h = ((g - b) / delta) % 6;
-  else if (cmax === g) h = (b - r) / delta + 2;
-  else h = (r - g) / delta + 4;
-
-  h = Math.round(h * 60);
-  if (h < 0) h += 360;
-
-  l = (cmax + cmin) / 2;
-  s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
-  s = +(s * 100).toFixed(1);
-  l = +(l * 100).toFixed(1);
-
-  return { h, s, l };
-};
-
-const hslToCss = (h, s, l, a = 1) => `hsl(${h} ${s}% ${l}% / ${a})`;
-
-const generateTonalPalette = (h, s) => {
-  const tones = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99, 100];
-  const palette = {};
-  for (const tone of tones) {
-    palette[tone] = hslToCss(h, s, tone);
-  }
-  return palette;
-};
-
-const generateM3Scheme = (sourceHex) => {
-  const primaryHSL = hexToHSL(sourceHex);
-  const secondaryHSL = { h: (primaryHSL.h + 60) % 360, s: Math.max(10, primaryHSL.s * 0.35), l: primaryHSL.l };
-  const tertiaryHSL = { h: (primaryHSL.h - 60 + 360) % 360, s: Math.max(20, primaryHSL.s * 0.75), l: primaryHSL.l };
-  const neutralHSL = { h: primaryHSL.h, s: Math.max(2, primaryHSL.s * 0.1), l: primaryHSL.l };
-  const neutralVariantHSL = { h: primaryHSL.h, s: Math.max(5, primaryHSL.s * 0.2), l: primaryHSL.l };
-  const errorHSL = { h: 25, s: 84, l: 50 };
-
-  const pPalette = generateTonalPalette(primaryHSL.h, primaryHSL.s);
-  const sPalette = generateTonalPalette(secondaryHSL.h, secondaryHSL.s);
-  const tPalette = generateTonalPalette(tertiaryHSL.h, tertiaryHSL.s);
-  const nPalette = generateTonalPalette(neutralHSL.h, neutralHSL.s);
-  const nvPalette = generateTonalPalette(neutralVariantHSL.h, neutralVariantHSL.s);
-  const ePalette = generateTonalPalette(errorHSL.h, errorHSL.s);
-
-  // Light theme color roles from Material Design 3
-  return {
-    primary: pPalette[40],
-    onPrimary: pPalette[100],
-    primaryContainer: pPalette[90],
-    onPrimaryContainer: pPalette[10],
-    secondary: sPalette[40],
-    onSecondary: sPalette[100],
-    secondaryContainer: sPalette[90],
-    onSecondaryContainer: sPalette[10],
-    tertiary: tPalette[40],
-    onTertiary: tPalette[100],
-    tertiaryContainer: tPalette[90],
-    onTertiaryContainer: tPalette[10],
-    error: ePalette[40],
-    onError: ePalette[100],
-    errorContainer: ePalette[90],
-    onErrorContainer: ePalette[10],
-    background: nPalette[99],
-    onBackground: nPalette[10],
-    surface: nPalette[99],
-    onSurface: nPalette[10],
-    surfaceVariant: nvPalette[90],
-    onSurfaceVariant: nvPalette[30],
-    outline: nvPalette[50],
-    outlineVariant: nvPalette[80],
-  };
-};
-
-const MiniPomodoroTimer = ({ pomodoro }) => {
+const MiniPomodoroTimer = ({ pomodoro, onReset }) => {
   const { timeLeft, duration, mode } = pomodoro;
   const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
   const seconds = (timeLeft % 60).toString().padStart(2, '0');
@@ -100,20 +9,27 @@ const MiniPomodoroTimer = ({ pomodoro }) => {
   const isWork = mode === 'work';
 
   return (
-    <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
-      <div className="flex justify-between items-center text-xs mb-1.5 text-[var(--color-text-secondary)]">
-        <span className="font-semibold flex items-center gap-1.5">
+    <div className="mt-3 pt-3 border-t border-light-text/10 dark:border-dark-text/10">
+      <div className="flex justify-between items-center text-xs mb-1.5">
+        <span className="font-semibold flex items-center gap-1.5 text-light-text-muted dark:text-dark-text-muted">
           {isWork ? (
-            <Flame size={14} className="text-orange-500 animate-pulse" />
+            <Flame size={14} className="text-light-primary animate-pulse" />
           ) : (
-            <Coffee size={14} className="text-cyan-500" />
+            <Coffee size={14} className="text-green-500" />
           )}
           <span>{isWork ? 'Focus Session' : 'On a Break'}</span>
         </span>
-        <span className="font-mono font-bold text-base text-[var(--color-text-primary)]">{minutes}:{seconds}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono font-bold text-base text-light-text dark:text-dark-text">{minutes}:{seconds}</span>
+          {onReset && (
+            <button onClick={onReset} className="p-1.5 rounded-full text-light-danger dark:text-dark-danger hover:bg-red-500/10 transition-colors" title="Stop Session">
+              <Square size={14} />
+            </button>
+          )}
+        </div>
       </div>
-      <div className="w-full bg-[var(--color-border)] rounded-full h-2">
-        <div className={`${isWork ? 'bg-[var(--color-button-primary)]' : 'bg-cyan-500'} h-2 rounded-full transition-all duration-500`} style={{ width: `${progress}%` }}></div>
+      <div className="w-full bg-light-text/10 dark:bg-dark-text/10 rounded-full h-2 shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark">
+        <div className={`${isWork ? 'bg-light-primary' : 'bg-green-500'} h-2 rounded-full transition-all duration-500`} style={{ width: `${progress}%` }}></div>
       </div>
     </div>
   );
@@ -128,12 +44,11 @@ function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date()); // Default to today
   const [showSettings, setShowSettings] = useState(false);
-  const [locale, setLocale] = useState('en-US');
-  const [theme, setTheme] = useState('purple');
+  const [locale, setLocale] = useState('ru-RU');
+  const [theme, setThemeState] = useState('system'); // 'light', 'dark', 'system'
   const [weekStart, setWeekStart] = useState(0); // 0 = Sunday, 1 = Monday
   const [isLoading, setIsLoading] = useState(true);
   const [isLoaderVisible, setIsLoaderVisible] = useState(false);
-  const [customColor, setCustomColor] = useState('#8b5cf6');
   const [hideGlobal, setHideGlobal] = useState(false);
   const [hideLocal, setHideLocal] = useState(false);
   const [selectedTag, setSelectedTag] = useState(null);
@@ -171,6 +86,33 @@ function App() {
 
   // --- Pomodoro State (Global) ---
   const [pomodoro, setPomodoro] = useState(initialPomodoroState);
+
+  const setTheme = (newTheme) => {
+    saveSetting('theme', newTheme);
+    setThemeState(newTheme);
+  };
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const isDark =
+      theme === 'dark' ||
+      (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    root.classList.remove(isDark ? 'light' : 'dark');
+    root.classList.add(isDark ? 'dark' : 'light');
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if (theme === 'system') {
+        const isDarkNow = mediaQuery.matches;
+        root.classList.remove(isDarkNow ? 'light' : 'dark');
+        root.classList.add(isDarkNow ? 'dark' : 'light');
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [theme]);
 
   const playSound = (soundFile) => {
     try {
@@ -234,10 +176,6 @@ function App() {
     });
   };
 
-  const handlePauseResumePomodoro = () => {
-    setPomodoro(p => ({ ...p, isPaused: !p.isPaused }));
-  };
-
   const resetPomodoro = (confirm = false) => {
     if (confirm && pomodoro.isActive && !window.confirm('Are you sure you want to stop the focus session?')) {
       return;
@@ -270,89 +208,6 @@ function App() {
     pomodoroWorkDuration: 25,
     pomodoroBreakDuration: 5,
   });
-
-  // Base theme colors
-  const themes = {
-    purple: {
-      name: 'Purple',
-      color: '#8b5cf6'
-    },
-    blue: {
-      name: 'Blue',
-      color: '#3b82f6'
-    },
-    green: {
-      name: 'Green',
-      color: '#22c55e'
-    },
-    pink: {
-      name: 'Pink',
-      color: '#ec4899'
-    }
-  };
-
-  const generatePaletteFromHex = React.useCallback((baseHex) => {
-    const scheme = generateM3Scheme(baseHex);
-    const { h, s, l } = hexToHSL(scheme.primary);
-
-    return {
-      primary: scheme.primary,
-      gradientFrom: scheme.secondaryContainer,
-      gradientTo: scheme.tertiaryContainer,
-      bgPrimary: scheme.surface,
-      bgSecondary: scheme.secondaryContainer,
-      textPrimary: scheme.onSurface,
-      textSecondary: scheme.onSecondaryContainer,
-      textMuted: hslToCss(hexToHSL(scheme.onSurface).h, hexToHSL(scheme.onSurface).s, 55),
-      textLight: hslToCss(hexToHSL(scheme.onSurface).h, hexToHSL(scheme.onSurface).s, 70),
-      border: scheme.outlineVariant,
-      focus: scheme.primary,
-      buttonPrimary: scheme.primary,
-      buttonPrimaryHover: hslToCss(hexToHSL(scheme.primary).h, hexToHSL(scheme.primary).s, hexToHSL(scheme.primary).l - 5), // Keep some interaction flair
-      buttonSecondary: scheme.secondaryContainer,
-      buttonSecondaryHover: scheme.primaryContainer,
-      ring: hslToCss(h, s, l + 20, 0.5),
-      calendarToday: scheme.primaryContainer,
-      calendarSelected: scheme.primary,
-      calendarHover: scheme.primaryContainer,
-      textOnPrimary: scheme.onPrimary,
-      link: scheme.primary,
-      linkHover: scheme.tertiary,
-      switchInactive: scheme.outline,
-      switchThumb: scheme.surface,
-      borderUncompletedTask: scheme.outlineVariant,
-      checkboxBorder: scheme.outline,
-      checkboxBorderHover: scheme.primary,
-      checkboxBorderCompleted: scheme.primary,
-      selectHover: scheme.secondary,
-      themeSelectBorderActive: scheme.primary,
-      themeSelectRingActive: hslToCss(h, s, l + 20, 0.5),
-      themeSelectRingHover: scheme.primaryContainer,
-      buttonDanger: scheme.error,
-      buttonDangerHover: hslToCss(hexToHSL(scheme.error).h, hexToHSL(scheme.error).s, hexToHSL(scheme.error).l - 5),
-      textDanger: scheme.error,
-      borderDanger: scheme.errorContainer,
-
-      // Matrix quadrant backgrounds
-      matrixDoBg: scheme.errorContainer,
-      matrixScheduleBg: scheme.tertiaryContainer,
-      matrixDelegateBg: scheme.outlineVariant,
-      matrixEliminateBg: scheme.surfaceVariant,
-    };
-  }, []);
-
-  const activePalette = React.useMemo(() => {
-    const baseColor = theme === 'custom' ? customColor : themes[theme].color;
-    return generatePaletteFromHex(baseColor);
-  }, [theme, customColor, generatePaletteFromHex]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    for (const [key, value] of Object.entries(activePalette)) {
-      const cssVarName = `--color-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
-      root.style.setProperty(cssVarName, value);
-    }
-  }, [activePalette]);
 
   // Initialize IndexedDB
   useEffect(() => {
@@ -406,11 +261,11 @@ function App() {
             // Create settings store if it doesn't exist
             if (!dbHandle.objectStoreNames.contains('settings')) {
               const settingsStore = dbHandle.createObjectStore('settings', { keyPath: 'id' });
-              settingsStore.put({ id: 'locale', value: 'en-US' });
-              settingsStore.put({ id: 'theme', value: 'purple' });
+              settingsStore.put({ id: 'locale', value: 'ru-RU' });
+              settingsStore.put({ id: 'theme', value: 'system' });
               settingsStore.put({ id: 'weekStart', value: 0 }); // Sunday by default
               settingsStore.put({ id: 'hideGlobal', value: false });
-              settingsStore.put({ id: 'hideLocal', value: false }); settingsStore.put({ id: 'customColor', value: '#8b5cf6' });
+              settingsStore.put({ id: 'hideLocal', value: false });
               settingsStore.put({ id: 'nsfwTags', value: '' });
             }
 
@@ -463,10 +318,9 @@ function App() {
 
       request.onsuccess = () => {
         const settingsMap = new Map((request.result || []).map(item => [item.id, item.value]));
-        setLocale(settingsMap.get('locale') ?? 'en-US');
-        setTheme(settingsMap.get('theme') ?? 'purple');
+        setLocale(settingsMap.get('locale') ?? 'ru-RU');
+        setThemeState(settingsMap.get('theme') ?? 'system');
         setWeekStart(settingsMap.get('weekStart') ?? 0);
-        setCustomColor(settingsMap.get('customColor') ?? '#8b5cf6');
         setHideGlobal(settingsMap.get('hideGlobal') ?? false);
         setHideLocal(settingsMap.get('hideLocal') ?? false);
         setNsfwTags(settingsMap.get('nsfwTags') ?? '');
@@ -902,6 +756,14 @@ function App() {
     return (firstDay - weekStart + 7) % 7;
   };
 
+  const handleCalendarHeaderClick = () => {
+    if (calendarViewMode === 'days') {
+      setCalendarViewMode('months');
+    } else if (calendarViewMode === 'months') {
+      setCalendarViewMode('years');
+    }
+  };
+
   const handleCalendarNav = (direction) => {
     const newDate = new Date(currentDate);
     if (calendarViewMode === 'days') {
@@ -912,14 +774,6 @@ function App() {
       newDate.setFullYear(newDate.getFullYear() + (direction * 12));
     }
     setCurrentDate(newDate);
-  };
-
-  const handleCalendarHeaderClick = () => {
-    if (calendarViewMode === 'days') {
-      setCalendarViewMode('months');
-    } else if (calendarViewMode === 'months') {
-      setCalendarViewMode('years');
-    }
   };
 
   const selectDate = (day) => {
@@ -1058,7 +912,6 @@ function App() {
     saveSetting('weekStart', weekStart);
     saveSetting('hideGlobal', hideGlobal);
     saveSetting('hideLocal', hideLocal);
-    saveSetting('customColor', customColor);
     saveSetting('nsfwTags', nsfwTags);
     setShowSettings(false);
   };
@@ -1168,7 +1021,7 @@ function App() {
             href={part}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[var(--color-link)] hover:text-[var(--color-link-hover)] underline"
+            className="text-light-primary dark:text-dark-primary hover:underline"
           >
             {part}
           </a>
@@ -1180,7 +1033,7 @@ function App() {
           <button
             key={index}
             onClick={() => setSelectedTag(tag)}
-            className="bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] px-1.5 py-0.5 rounded-md text-sm mx-0.5 font-medium transition-colors hover:bg-[var(--color-button-secondary-hover)]"
+            className="bg-light-primary/10 dark:bg-dark-primary/10 text-light-primary dark:text-dark-primary px-1.5 py-0.5 rounded-md text-sm mx-0.5 font-medium transition-colors hover:bg-light-primary/20 dark:hover:bg-dark-primary/20"
           >
             {part}
           </button>
@@ -1219,6 +1072,21 @@ function App() {
     });
     return Object.entries(tagCounts).sort(([, countA], [, countB]) => countB - countA);
   }, [tasks]);
+
+  const isNowInTimeBlock = (startTime, endTime) => {
+    const now = new Date();
+    if (!startTime || !endTime) return false;
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+    const startBlock = new Date(now);
+    startBlock.setHours(startHours, startMinutes, 0, 0);
+
+    const endBlock = new Date(now);
+    endBlock.setHours(endHours, endMinutes, 0, 0);
+
+    return now >= startBlock && now < endBlock;
+  };
 
   const nsfwTagList = React.useMemo(() => nsfwTags.split(',').map(t => t.trim()).filter(Boolean), [nsfwTags]);
 
@@ -1277,7 +1145,6 @@ function App() {
       setViewMode={setViewMode}
       pomodoro={pomodoro}
       startPomodoro={startPomodoro}
-      handlePauseResumePomodoro={handlePauseResumePomodoro}
       handleResetPomodoro={handleResetPomodoro}
     />;
   }
@@ -1286,11 +1153,11 @@ function App() {
     // This prevents a flash of the full UI on fast loads
     // The loader itself will only appear after a short delay
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[var(--color-gradient-from)] to-[var(--color-gradient-to)] flex items-center justify-center">
+      <div className="min-h-screen bg-light-bg dark:bg-dark-bg flex items-center justify-center transition-colors duration-300">
         {isLoaderVisible && (
           <div className="flex flex-col items-center gap-4">
-            <LoaderCircle size={48} className="animate-spin text-[var(--color-primary)]" />
-            <p className="text-[var(--color-text-secondary)]">Loading database...</p>
+            <LoaderCircle size={48} className="animate-spin text-light-primary dark:text-dark-primary" />
+            <p className="text-light-text-muted dark:text-dark-text-muted">Loading database...</p>
           </div>
         )}
       </div>
@@ -1298,18 +1165,18 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--color-gradient-from)] to-[var(--color-gradient-to)]">
+    <div className="min-h-screen bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text transition-colors duration-300">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sticky Calendar Section */}
           <div className="lg:w-1/3">
-            <div className="sticky top-4 bg-[var(--color-bg-primary)] rounded-2xl shadow-lg p-6 flex flex-col">
+            <div className="sticky top-8 bg-light-surface dark:bg-dark-surface rounded-2xl shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark p-6 flex flex-col">
               {/* Mini Planner View */}
               <div
                 onClick={() => setViewMode('planner')}
-                className="mb-4 p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-button-secondary-hover)] transition-colors"
+                className="mb-4 p-4 rounded-xl shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark cursor-pointer transition-all"
               >
-                <h4 className="text-sm font-semibold text-[var(--color-text-secondary)] mb-2 flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-light-text-muted dark:text-dark-text-muted mb-2 flex items-center gap-2">
                   <Clock size={16} />
                   Today's Plan
                 </h4>
@@ -1328,24 +1195,31 @@ function App() {
                         return Math.min(100, (elapsed / totalDuration) * 100);
                       })();
                       return (
-                        <div key={block.id}>
+                        <div key={block.id} className="relative group">
                           <div className="flex justify-between items-center text-sm mb-1">
-                            <span className="font-semibold text-[var(--color-text-primary)] truncate pr-2" title={block.title}>{block.title}</span>
-                            <span className="text-[var(--color-text-muted)] flex-shrink-0">{block.startTime} - {block.endTime}</span>
+                            <span className="font-semibold truncate pr-2" title={block.title}>{block.title}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-light-text-muted dark:text-dark-text-muted flex-shrink-0">{block.startTime} - {block.endTime}</span>
+                              {isNowInTimeBlock(block.startTime, block.endTime) && !pomodoro.isActive && (
+                                <button onClick={(e) => { e.stopPropagation(); startPomodoro(block.id); }} className="p-1.5 rounded-full text-light-primary dark:text-dark-primary hover:bg-light-primary/10 dark:hover:bg-dark-primary/10 transition-colors opacity-0 group-hover:opacity-100" title="Start Focus Session">
+                                  <Play size={14} />
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <div className="w-full bg-[var(--color-border)] rounded-full h-2">
-                            <div className={`${block.color} h-2 rounded-full`} style={{ width: `${progress}%` }}></div>
+                          <div className="w-full bg-light-text/10 dark:bg-dark-text/10 rounded-full h-2 shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark">
+                            <div className={`${block.color.replace('border-', 'bg-')} h-2 rounded-full`} style={{ width: `${progress}%` }}></div>
                           </div>
                         </div>
                       );
                     })}
                   </div>
                 ) : (
-                  <div className="text-center text-[var(--color-text-muted)] py-2 text-sm">
+                  <div className="text-center text-light-text-muted dark:text-dark-text-muted py-2 text-sm">
                     <p>No active block. Time to plan!</p>
                   </div>
                 )}
-                {pomodoro.isActive && <MiniPomodoroTimer pomodoro={pomodoro} />}
+                {pomodoro.isActive && <MiniPomodoroTimer pomodoro={pomodoro} onReset={handleResetPomodoro} />}
               </div>
 
               {/* Global Pomodoro Timer is now inside the planner preview */}
@@ -1354,38 +1228,38 @@ function App() {
                   <button
                     onClick={() => setViewMode(viewMode === 'list' ? 'matrix' : 'list')}
                     disabled={showArchived}
-                    className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg transition-colors bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)] disabled:opacity-50 disabled:cursor-not-allowed`}
+                    className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg transition-all duration-150 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark disabled:opacity-50 disabled:cursor-not-allowed`}
                     title={viewMode === 'list' ? 'Switch to Matrix View' : 'Switch to List View'}
                   >
                     {viewMode === 'list' ? <Grid size={20} /> : <List size={20} />}
-                    <span className="hidden sm:inline">{viewMode === 'list' ? 'Matrix' : 'List'}</span>
+                    <span className="hidden sm:inline font-semibold">{viewMode === 'list' ? 'Matrix' : 'List'}</span>
                   </button>
                   <button
                     onClick={() => setShowArchived(!showArchived)}
-                    className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg transition-colors ${showArchived ?
-                      'bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-button-primary-hover)]' :
-                      'bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]'}`}
+                    className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg transition-all duration-150 ${showArchived ?
+                      'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-light-primary' :
+                      'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'}`}
                   >
                     <Archive size={20} />
-                    <span className="hidden sm:inline">Archive</span>
+                    <span className="hidden sm:inline font-semibold">Archive</span>
                   </button>
                 </div>
 
                 {/* Settings Button */}
                 <button
                   onClick={() => setShowSettings(true)}
-                  className="p-4 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]"
+                  className="p-4 rounded-lg transition-all duration-150 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"
                 >
                   <Settings size={20} />
                 </button>
               </div>
 
               {/* Calendar */}
-              <div className="bg-[var(--color-bg-secondary)] rounded-xl p-4 mb-6">
+              <div className="rounded-xl p-4 mb-6 shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark">
                 {/* Time Range Filter */}
                 {!showArchived && (
-                  <div className="mb-6">
-                    <div className="flex flex-wrap gap-1 p-1 bg-[var(--color-bg-secondary)] rounded-lg">
+                  <div className="mb-4">
+                    <div className="flex p-1 rounded-xl shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark">
                       {[
                         { id: 'day', label: 'Day' },
                         { id: 'month', label: 'Month' },
@@ -1397,171 +1271,196 @@ function App() {
                           key={filter.id}
                           onClick={() => {
                             setTimeFilterMode(filter.id);
-                            if (filter.id === 'day') setCalendarViewMode('days');
-                            else if (filter.id === 'month' || filter.id === 'quarter') setCalendarViewMode('months');
-                            else if (filter.id === 'year') setCalendarViewMode('years');
-                            else setCalendarViewMode('days'); // Default for 'All Time'
+                            if (filter.id === 'day' || filter.id === 'all') { setCalendarViewMode('days'); }
+                            else if (filter.id === 'month' || filter.id === 'quarter') { setCalendarViewMode('months'); }
+                            else if (filter.id === 'year') { setCalendarViewMode('years'); }
                           }}
-                          className={`px-2 py-1 text-sm rounded-md transition-colors flex-1 text-center ${timeFilterMode === filter.id
-                            ? 'bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)] shadow'
-                            : 'hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]'
+                          className={`px-2 py-1.5 text-sm rounded-lg transition-all duration-200 flex-1 text-center font-semibold ${timeFilterMode === filter.id
+                            ? 'text-light-primary dark:text-dark-primary shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'
+                            : 'text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text'
                             }`}
                         >{filter.label}</button>
                       ))}
                     </div>
                   </div>
                 )}
+                <div className="min-h-[320px]">
+                  <>
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="ml-2 font-bold text-lg [text-shadow:1px_1px_1px_#fff,-1px_-1px_1px_#a3b1c6] dark:[text-shadow:1px_1px_1px_#373c43,-1px_-1px_1px_#21252a]">
+                        {
+                          calendarViewMode === 'days' ? formatDate(currentDate, { month: 'long', year: 'numeric' }) :
+                            calendarViewMode === 'months' ? formatDate(currentDate, { year: 'numeric' }) :
+                              `${Math.floor(currentDate.getFullYear() / 12) * 12} - ${Math.floor(currentDate.getFullYear() / 12) * 12 + 11}`
+                        }
+                      </h3>
 
-                {calendarViewMode === 'days' && timeFilterMode != 'all' && (
-                  <div className="flex justify-between items-center mb-4">
-                    <h3>
-                      {formatDate(currentDate, { month: 'long', year: 'numeric' })}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleCalendarNav(-1)}
-                        className="p-2 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]"
-                        title="Previous"
-                      >
-                        &lt;
-                      </button>
-                      <button
-                        onClick={goToToday}
-                        className="p-2 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)] text-sm"
-                        title="Go to Today"
-                      >
-                        Today
-                      </button>
-                      <button
-                        onClick={() => handleCalendarNav(1)}
-                        className="p-2 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]"
-                        title="Next"
-                      >
-                        &gt;
-                      </button>
+                      <div className="flex items-center text-center text-light-text-muted dark:text-dark-text-muted text-sm font-medium rounded-lg">
+                        <button onClick={() => handleCalendarNav(-1)} className="px-3 py-2 rounded-l-xl transition-all duration-150 hover:shadow-neumorphic-outset-sm dark:hover:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark" title="Previous">&lt;</button>
+                        <button onClick={goToToday} className="px-3 py-2 text-sm border-x border-light-text/10 dark:border-dark-text/10 transition-all duration-150 hover:shadow-neumorphic-outset-sm dark:hover:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark" title="Go to Today">Today</button>
+                        <button onClick={() => handleCalendarNav(1)} className="px-3 py-2 rounded-r-xl transition-all duration-150 hover:shadow-neumorphic-outset-sm dark:hover:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark" title="Next">&gt;</button>
+                      </div>
+
                     </div>
-                  </div>
-                )}
 
-                <div className="grid grid-cols-7 gap-1 mb-2">
-                  {calendarViewMode === 'days' && getWeekdayNames().map((day, index) => (
-                    <div key={index} className="text-center text-[var(--color-text-secondary)] text-sm font-medium py-1">
-                      {day}
+                    <div className="grid grid-cols-7 gap-1 mb-2 h-8 items-center">
+                      {calendarViewMode === 'days' && getWeekdayNames().map((day, index) => (
+                        <div key={index} className="text-center text-light-text-muted dark:text-dark-text-muted text-sm font-medium">
+                          {day}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
 
-                {calendarViewMode === 'days' && (
-                  <div className="grid grid-cols-7 gap-1">
-                    {[...Array(getFirstDayOfMonth(currentDate)).keys()].map(i => (
-                      <div key={`empty-${i}`} className="h-10"></div>
-                    ))}
-                    {[...Array(getDaysInMonth(currentDate)).keys()].map(i => {
-                      const day = i + 1;
-                      const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-                      const isToday = date.toDateString() === new Date().toDateString();
-                      const isSelected = timeFilterMode === 'day' && date.toDateString() === selectedDate.toDateString();
-                      const taskCount = getTasksForDate(date);
-                      return (
-                        <button
-                          key={day}
-                          onClick={() => selectDate(day)}
-                          className={`h-10 rounded-lg flex flex-col items-center justify-center text-sm transition-colors relative ${isSelected
-                            ? 'bg-[var(--color-calendar-selected)] text-[var(--color-text-on-primary)]'
-                            : isToday ? 'bg-[var(--color-calendar-today)] border-2 border-[var(--color-calendar-selected)]' : 'hover:bg-[var(--color-calendar-hover)]'
-                            } ${taskCount > 0 ? 'font-bold' : ''}`}
-                        >
-                          <span>{day}</span>
-                          {taskCount > 0 && (
-                            <span className={`text-xs ${isSelected ? 'text-[var(--color-text-on-primary)] text-opacity-80' : 'text-[var(--color-text-secondary)]'}`}>
-                              {taskCount}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {calendarViewMode === 'months' && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {[...Array(12).keys()].map(monthIndex => {
-                      const monthDate = new Date(currentDate.getFullYear(), monthIndex, 1);
+                    {calendarViewMode === 'days' && (
+                      <div className="grid grid-cols-7 gap-1">
+                        {[...Array(getFirstDayOfMonth(currentDate)).keys()].map(i => (
+                          <div key={`empty-${i}`} className="h-10"></div>
+                        ))}
+                        {[...Array(getDaysInMonth(currentDate)).keys()].map(i => {
+                          const day = i + 1;
+                          const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                          const isToday = date.toDateString() === new Date().toDateString();
+                          const isSelected = timeFilterMode === 'day' && date.toDateString() === selectedDate.toDateString();
+                          const taskCount = getTasksForDate(date);
+                          return (
+                            <button
+                              key={day}
+                              onClick={() => selectDate(day)}
+                              className={`h-10 rounded-lg flex flex-col items-center justify-center text-sm transition-all duration-150 relative ${isSelected
+                                ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-light-primary dark:text-dark-primary'
+                                : isToday ? 'font-bold text-light-primary dark:text-dark-primary' : 'hover:shadow-neumorphic-outset-sm dark:hover:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark'
+                                } `}
+                            >
+                              <span>{day}</span>
+                              {taskCount > 0 && (
+                                <span className={`absolute right-1.5 bottom-1 text-xs ${isSelected ? 'opacity-75' : 'text-light-text-muted dark:text-dark-text-muted'}`}>
+                                  {taskCount}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {calendarViewMode === 'months' && (() => {
+                      const currentYear = currentDate.getFullYear();
                       const selectedYear = selectedDate.getFullYear();
                       const selectedMonth = selectedDate.getMonth();
-                      const selectedQuarter = Math.floor(selectedMonth / 3);
-                      const currentYear = monthDate.getFullYear();
-                      const currentMonth = monthDate.getMonth();
-                      const currentQuarter = Math.floor(currentMonth / 3);
 
-                      let isSelected = false;
-                      if (currentYear === selectedYear) {
-                        if (timeFilterMode === 'month' && currentMonth === selectedMonth) isSelected = true;
-                        if (timeFilterMode === 'quarter' && currentQuarter === selectedQuarter) isSelected = true;
+                      if (timeFilterMode === 'quarter') {
+                        const quarters = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]];
+                        const selectedQuarter = Math.floor(selectedMonth / 3);
+
+                        return (
+                          <div className="space-y-2">
+                            {quarters.map((quarterMonths, quarterIndex) => {
+                              const isCurrentQuarterSelected = selectedYear === currentYear && quarterIndex === selectedQuarter;
+
+                              return (
+                                <div
+                                  key={quarterIndex}
+                                  className={`flex rounded-lg transition-all duration-150 ${isCurrentQuarterSelected ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark' : 'gap-2'}`}
+                                >
+                                  {quarterMonths.map((monthIndex, indexInQuarter) => {
+                                    const monthDate = new Date(currentYear, monthIndex, 1);
+                                    const borderRadiusClasses = [
+                                      'rounded-l-lg',
+                                      'rounded-none',
+                                      'rounded-r-lg'
+                                    ];
+
+                                    return (
+                                      <button
+                                        key={monthIndex}
+                                        onClick={() => selectMonth(monthIndex)}
+                                        className={`py-4 w-1/3 text-center transition-all duration-150 ${isCurrentQuarterSelected
+                                          ? `${borderRadiusClasses[indexInQuarter]} text-light-primary dark:text-dark-primary`
+                                          : 'rounded-lg hover:shadow-neumorphic-outset-sm dark:hover:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark'
+                                          }`}
+                                      >
+                                        {formatDate(monthDate, { month: 'short' })}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
                       }
-                      return (
-                        <button
-                          key={monthIndex}
-                          onClick={() => selectMonth(monthIndex)}
-                          className={`py-4 rounded-lg text-center transition-colors ${isSelected
-                            ? 'bg-[var(--color-calendar-selected)] text-[var(--color-text-on-primary)]'
-                            : 'hover:bg-[var(--color-calendar-hover)]'
-                            }`}
-                        >
-                          {formatDate(monthDate, { month: 'short' })}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
 
-                {calendarViewMode === 'years' && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {[...Array(12).keys()].map(i => {
-                      const startYear = Math.floor(currentDate.getFullYear() / 12) * 12;
-                      const year = startYear + i;
-                      const isSelected = timeFilterMode === 'year' && year === selectedDate.getFullYear();
+                      // Default month view (not quarter)
                       return (
-                        <button
-                          key={year}
-                          onClick={() => selectYear(year)}
-                          className={`py-4 rounded-lg text-center transition-colors ${isSelected
-                            ? 'bg-[var(--color-calendar-selected)] text-[var(--color-text-on-primary)]'
-                            : 'hover:bg-[var(--color-calendar-hover)]'
-                            }`}
-                        >
-                          {year}
-                        </button>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[...Array(12).keys()].map(monthIndex => {
+                            const monthDate = new Date(currentYear, monthIndex, 1);
+                            const isSelected = timeFilterMode === 'month' && currentYear === selectedYear && monthIndex === selectedMonth;
+
+                            return (
+                              <button
+                                key={monthIndex}
+                                onClick={() => selectMonth(monthIndex)}
+                                className={`py-4 rounded-lg text-center transition-all duration-150 ${isSelected
+                                  ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-light-primary dark:text-dark-primary'
+                                  : 'hover:shadow-neumorphic-outset-sm dark:hover:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark'
+                                  }`}
+                              >
+                                {formatDate(monthDate, { month: 'short' })}
+                              </button>
+                            );
+                          })}
+                        </div>
                       );
-                    })}
-                  </div>
-                )}
+                    })()}
+                    {calendarViewMode === 'years' && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {[...Array(12).keys()].map(i => {
+                          const startYear = Math.floor(currentDate.getFullYear() / 12) * 12;
+                          const year = startYear + i;
+                          const isSelected = timeFilterMode === 'year' && year === selectedDate.getFullYear();
+                          return (
+                            <button
+                              key={year}
+                              onClick={() => selectYear(year)}
+                              className={`py-4 rounded-lg text-center transition-all duration-150 ${isSelected
+                                ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-light-primary dark:text-dark-primary'
+                                : 'hover:shadow-neumorphic-outset-sm dark:hover:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark'
+                                }`}
+                            >
+                              {year}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                </div>
               </div>
 
               {!showArchived && (
                 <div className="flex grid-cols-4">
                   {/* Hide Global Tasks Switch */}
-                  <div className="flex items-center gap-1 text-[var(--color-text-secondary)]">
+                  <div className="flex items-center gap-2 text-light-text-muted dark:text-dark-text-muted">
                     <Shield size={20} />
                     <button
                       onClick={toggleHideGlobal}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${hideGlobal ? 'bg-[var(--color-switch-inactive)]' : 'bg-[var(--color-button-primary)]'}`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 ${hideGlobal ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark' : 'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'}`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-[var(--color-switch-thumb)] transition-transform ${hideGlobal ? 'translate-x-1' : 'translate-x-6'}`}
+                        className={`inline-block h-4 w-4 transform rounded-full transition-all ${hideGlobal ? 'translate-x-1 bg-light-text-muted dark:bg-dark-text-muted' : 'translate-x-6 bg-light-primary'}`}
                       />
                     </button>
                   </div>
 
                   {/* Hide Local Tasks Switch */}
-                  <div className="flex items-center gap-1 ml-5 text-[var(--color-text-secondary)]">
+                  <div className="flex items-center gap-2 ml-5 text-light-text-muted dark:text-dark-text-muted">
                     <Pin size={20} />
                     <button
                       onClick={toggleHideLocal}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${hideLocal ? 'bg-[var(--color-switch-inactive)]' : 'bg-[var(--color-button-primary)]'}`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 ${hideLocal ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark' : 'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'}`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-[var(--color-switch-thumb)] transition-transform ${hideLocal ? 'translate-x-1' : 'translate-x-6'}`}
+                        className={`inline-block h-4 w-4 transform rounded-full transition-all ${hideLocal ? 'translate-x-1 bg-light-text-muted dark:bg-dark-text-muted' : 'translate-x-6 bg-light-primary'}`}
                       />
                     </button>
                   </div>
@@ -1570,22 +1469,22 @@ function App() {
 
               {/* Tag Cloud */}
               {allTags.length > 0 && !showArchived && (
-                <div className="mt-6">
-                  <h4 className="text-[var(--color-text-primary)] font-semibold mb-2">Tags</h4>
+                <div className="mt-6 pt-4 border-t border-light-text/10 dark:border-dark-text/10">
+                  <h4 className="font-semibold mb-2">Tags</h4>
                   <div className="flex flex-wrap gap-2">
                     {allTags.map(([tag, count]) => (
                       <button
                         key={tag}
                         onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                        className={`px-2 py-1 text-xs rounded-lg transition-colors ${selectedTag === tag ?
-                          'bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)]' :
-                          'bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]'}`}
+                        className={`px-2 py-1 text-xs rounded-lg transition-all duration-150 ${selectedTag === tag
+                          ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-light-primary dark:text-dark-primary'
+                          : 'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'}`}
                       >
-                        #{tag} <span className={`${selectedTag === tag ? 'opacity-70' : 'text-[var(--color-text-light)]'}`}>{count}</span>
+                        #{tag} <span className={`${selectedTag === tag ? 'opacity-70' : 'text-light-text-muted dark:text-dark-text-muted'}`}>{count}</span>
                       </button>
                     ))}
                     {selectedTag && (
-                      <button onClick={() => setSelectedTag(null)} className="p-1 rounded-full bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)]">
+                      <button onClick={() => setSelectedTag(null)} className="p-1 rounded-full shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark">
                         <X size={14} />
                       </button>
                     )}
@@ -1594,21 +1493,20 @@ function App() {
               )}
               {/* Task Input */}
               {!showArchived && (
-                <div className="mt-6">
+                <div className="mt-6 pt-4 border-t border-light-text/10 dark:border-dark-text/10">
                   <div className="relative">
                     {showTagSuggestions && tagSuggestions.length > 0 && (
-                      <div ref={suggestionsRef} className="absolute bottom-full mb-2 w-full bg-[var(--color-bg-secondary)] border border-[var(--color-border)] rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                      <div ref={suggestionsRef} className="absolute bottom-full mb-2 w-full bg-light-surface dark:bg-dark-surface rounded-lg shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark z-10 max-h-48 overflow-y-auto">
                         <ul className="p-1">
                           {tagSuggestions.map((tag, index) => (
                             <li key={tag}>
                               <button
                                 onClick={() => selectTagSuggestion(tag)}
                                 onMouseOver={() => setHighlightedTagIndex(index)}
-                                className={`w-full text-left px-3 py-2 rounded-md text-sm ${
-                                  index === highlightedTagIndex
-                                    ? 'bg-[var(--color-button-secondary-hover)] text-[var(--color-text-primary)]'
-                                    : 'text-[var(--color-text-secondary)]'
-                                  } hover:bg-[var(--color-button-secondary-hover)]`}
+                                className={`w-full text-left px-3 py-2 rounded-md text-sm ${index === highlightedTagIndex
+                                  ? 'bg-light-primary/20 dark:bg-dark-primary/20'
+                                  : ''
+                                  } hover:bg-light-primary/10 dark:hover:bg-dark-primary/10`}
                               >
                                 #{tag}
                               </button>
@@ -1623,46 +1521,46 @@ function App() {
                       onChange={handleInputChange}
                       onKeyDown={handleKeyPress}
                       // disabled={selectedDate.getTime() < new Date().getTime()} TODO!
-                      placeholder="Add a new task..."
-                      className="w-full px-4 py-3 pr-12 rounded-xl border-2 border-[var(--color-border)] focus:border-[var(--color-focus)] focus:outline-none transition-colors resize-none min-h-[60px] max-h-64 bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
+                      placeholder="Добавить новую задачу..."
+                      className="w-full px-4 py-3 pr-12 rounded-xl bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none transition-colors resize-none min-h-[60px] max-h-64"
                       rows="2"
                     />
                     <button
                       onClick={addTask}
                       disabled={!inputValue.trim()}
-                      className={`absolute right-3 bottom-3 p-2 rounded-lg transition-colors duration-200 ${inputValue.trim() ?
-                        'bg-[var(--color-button-primary)] hover:bg-[var(--color-button-primary-hover)] text-[var(--color-text-on-primary)]' :
-                        'bg-[var(--color-bg-secondary)] text-[var(--color-text-light)] cursor-not-allowed'}`}
+                      className={`absolute right-3 bottom-3 p-2 rounded-lg transition-all duration-150 ${inputValue.trim() ?
+                        'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark text-light-primary' :
+                        'text-light-text-muted dark:text-dark-text-muted cursor-not-allowed'}`}
                     >
                       <Send size={20} />
                     </button>
                   </div>
                   <div className="mt-3 flex justify-center items-center gap-4">
-                    <button onClick={() => setPinMode('none')} title="Pin: None" className={`p-2 rounded-full transition-colors ${pinMode === 'none' ? 'bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)]' : 'bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]'}`}>
+                    <button onClick={() => setPinMode('none')} title="Pin: None" className={`p-2 rounded-full transition-all duration-150 ${pinMode === 'none' ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-light-primary' : 'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'}`}>
                       <PinOff size={16} />
                     </button>
-                    <button onClick={() => setPinMode('global')} title="Pin: Global" className={`p-2 rounded-full transition-colors ${pinMode === 'global' ? 'bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)]' : 'bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]'}`}>
+                    <button onClick={() => setPinMode('global')} title="Pin: Global" className={`p-2 rounded-full transition-all duration-150 ${pinMode === 'global' ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-light-primary' : 'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'}`}>
                       <Shield size={16} />
                     </button>
-                    <button onClick={() => setPinMode('local')} title="Pin: Local" className={`p-2 rounded-full transition-colors ${pinMode === 'local' ? 'bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)]' : 'bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]'}`}>
+                    <button onClick={() => setPinMode('local')} title="Pin: Local" className={`p-2 rounded-full transition-all duration-150 ${pinMode === 'local' ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-light-primary' : 'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'}`}>
                       <Pin size={16} />
                     </button>
-                    <div className="border-l h-6 border-[var(--color-border)] mx-2"></div>
-                    <button onClick={() => setIsImportant(!isImportant)} title={`Mark as ${isImportant ? 'Not Important' : 'Important'}`} className={`p-2 rounded-full transition-colors ${isImportant ? 'bg-amber-400 text-white' : 'bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]'}`}>
-                      <Star size={16} className={`${isImportant ? 'fill-white' : ''}`} />
+                    <div className="border-l h-6 border-light-text/20 dark:border-dark-text/20 mx-2"></div>
+                    <button onClick={() => setIsImportant(!isImportant)} title={`Mark as ${isImportant ? 'Not Important' : 'Important'}`} className={`p-2 rounded-full transition-all duration-150 ${isImportant ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-amber-500' : 'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'}`}>
+                      <Star size={16} className={`${isImportant ? 'fill-amber-400' : ''}`} />
                     </button>
-                    <button onClick={() => setIsUrgent(!isUrgent)} title={`Mark as ${isUrgent ? 'Not Urgent' : 'Urgent'}`} className={`p-2 rounded-full transition-colors ${isUrgent ? 'bg-orange-500 text-white' : 'bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]'}`}>
-                      <Flame size={16} className={`${isUrgent ? 'fill-white' : ''}`} />
+                    <button onClick={() => setIsUrgent(!isUrgent)} title={`Mark as ${isUrgent ? 'Not Urgent' : 'Urgent'}`} className={`p-2 rounded-full transition-all duration-150 ${isUrgent ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-orange-500' : 'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'}`}>
+                      <Flame size={16} className={`${isUrgent ? 'fill-orange-500' : ''}`} />
                     </button>
                   </div>
-                  <div className="text-xs text-[var(--color-text-light)] mt-2 text-center">
+                  <div className="text-xs text-light-text-muted dark:text-dark-text-muted mt-2 text-center">
                     Press Enter to submit, Shift+Enter for new line
                   </div>
                 </div>
               )}
             </div>
             {/* Task Counters */}
-            <div className="mt-4 text-center text-[var(--color-text-secondary)] text-sm">
+            <div className="mt-4 text-center text-light-text-muted dark:text-dark-text-muted text-sm">
               {!showArchived ? (
                 <>
                   {activeTasks.length} active tasks
@@ -1685,18 +1583,18 @@ function App() {
           {/* Task List Section */}
           <div className="lg:w-2/3">
             {showArchived ? (
-              <div className="bg-[var(--color-bg-primary)] rounded-2xl shadow-lg p-6">
+              <div className="bg-light-surface dark:bg-dark-surface rounded-2xl shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark p-6">
                 <div className="mb-4">
-                  <p className="text-[var(--color-text-secondary)]">
+                  <p className="text-light-text-muted dark:text-dark-text-muted">
                     Archived - {archivedTasks.length} tasks
                   </p>
                 </div>
                 {archivedTasks.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-[var(--color-text-light)] mb-4">
+                    <div className="text-light-text-muted dark:text-dark-text-muted mb-4">
                       <Archive size={48} className="mx-auto" />
                     </div>
-                    <p className="text-[var(--color-text-muted)]">No archived tasks yet.</p>
+                    <p className="text-light-text-muted dark:text-dark-text-muted">No archived tasks yet.</p>
                   </div>
                 ) : (
                   <ul className="space-y-3">
@@ -1709,26 +1607,26 @@ function App() {
                         return (
                           <li
                             key={task.id}
-                            className="flex items-start justify-between p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]"
+                            className="flex items-start justify-between p-4 rounded-xl shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark"
                           >
                             <div className="flex items-start space-x-3 flex-1">
-                              <div className="w-6 h-6 rounded-full border-2 border-[var(--color-border)] flex items-center justify-center mt-1 flex-shrink-0">
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center mt-1 flex-shrink-0">
                                 <button
                                   onClick={() => restoreTask(task)}
-                                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors mt-1 flex-shrink-0 ${task.completed ?
-                                    'bg-[var(--color-button-primary)] border-[var(--color-checkbox-border-completed)] text-[var(--color-text-on-primary)]' :
-                                    'border-[var(--color-checkbox-border)] hover:border-[var(--color-checkbox-border-hover)]'}`}
+                                  className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-150 mt-1 flex-shrink-0 ${task.completed
+                                    ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-light-primary dark:text-dark-primary'
+                                    : 'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'}`}
                                 >
                                   {task.completed && <Check size={16} />}
                                 </button>
                               </div>
                               <div className="flex-1">
                                 {isNsfw && !isRevealed ? (
-                                  <div className="flex items-center gap-2 p-2 rounded-lg bg-opacity-50">
-                                    <span className="text-[var(--color-text-muted)]">Content hidden (NSFW tag)</span>
+                                  <div className="flex items-center gap-2 p-2 rounded-lg">
+                                    <span className="text-light-text-muted dark:text-dark-text-muted">Content hidden (NSFW tag)</span>
                                     <button
                                       onClick={() => setRevealedNsfw(prev => ({ ...prev, [task.id]: true }))}
-                                      className="px-2 py-1 rounded bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] text-sm flex items-center gap-1 hover:bg-[var(--color-button-secondary-hover)]"
+                                      className="px-2 py-1 rounded text-sm flex items-center gap-1 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"
                                     >
                                       <Eye size={14} /> Show
                                     </button>
@@ -1738,21 +1636,21 @@ function App() {
                                     {isNsfw && isRevealed && (
                                       <button
                                         onClick={() => setRevealedNsfw(prev => ({ ...prev, [task.id]: false }))}
-                                        className="absolute -top-2 -right-2 p-1 rounded-full bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]"
+                                        className="absolute -top-2 -right-2 p-1 rounded-full shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"
                                         title="Hide content"
                                       >
                                         <EyeOff size={14} />
                                       </button>
                                     )}
-                                    <span className="text-[var(--color-text-light)] line-through whitespace-pre-wrap break-words">
+                                    <span className="text-light-text-muted dark:text-dark-text-muted line-through whitespace-pre-wrap break-words">
                                       {renderTextWithLinks(task.text)}
                                     </span>
-                                    <div className="text-xs text-[var(--color-text-light)] mt-1">
+                                    <div className="text-xs text-light-text-muted dark:text-dark-text-muted mt-1">
                                       Archived: {formatDate(task.archivedAt)}
                                     </div>
-                                    {task.dueDate && <div className="text-xs text-[var(--color-text-light)]">Due: {formatDate(task.dueDate)}</div>}
-                                    {task.createdAt && <div className="text-xs text-[var(--color-text-light)]">Created: {formatDate(task.createdAt)}</div>}
-                                    {task.pinned === 'global' && <div className="text-xs text-[var(--color-text-light)]">Global pinned</div>}
+                                    {task.dueDate && <div className="text-xs text-light-text-muted dark:text-dark-text-muted">Due: {formatDate(task.dueDate)}</div>}
+                                    {task.createdAt && <div className="text-xs text-light-text-muted dark:text-dark-text-muted">Created: {formatDate(task.createdAt)}</div>}
+                                    {task.pinned === 'global' && <div className="text-xs text-light-text-muted dark:text-dark-text-muted">Global pinned</div>}
                                   </div>
                                 )}
                               </div>
@@ -1760,7 +1658,7 @@ function App() {
                             <div className="flex items-start space-x-2 ml-2">
                               <button
                                 onClick={() => deleteArchivedTask(task.id)}
-                                className="text-[var(--color-text-light)] hover:text-[var(--color-text-secondary)] transition-colors mt-1"
+                                className="text-light-text-muted dark:text-dark-text-muted hover:text-light-danger dark:hover:text-dark-danger transition-colors mt-1"
                               >
                                 <Trash2 size={20} />
                               </button>
@@ -1772,18 +1670,18 @@ function App() {
                 )}
               </div>
             ) : viewMode === 'list' ? (
-              <div className="bg-[var(--color-bg-primary)] rounded-2xl shadow-lg p-6">
+              <div className="bg-light-surface dark:bg-dark-surface rounded-2xl shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark p-6">
                 <div className="mb-4">
-                  <p className="text-[var(--color-text-secondary)]">
+                  <p className="text-light-text-muted dark:text-dark-text-muted">
                     {getTaskListHeaderText()} - {activeTasks.length} tasks
                   </p>
                 </div>
                 {sortedTasks.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-[var(--color-text-light)] mb-4">
+                    <div className="text-light-text-muted dark:text-dark-text-muted mb-4">
                       <Check size={48} className="mx-auto" />
                     </div>
-                    <p className="text-[var(--color-text-muted)]">
+                    <p className="text-light-text-muted dark:text-dark-text-muted">
                       No tasks for {formatDate(selectedDate)}
                     </p>
                   </div>
@@ -1796,17 +1694,14 @@ function App() {
                       return (
                         <li
                           key={task.id}
-                          className={`flex items-start justify-between p-4 rounded-xl transition-all duration-200 bg-[var(--color-bg-secondary)] border ${task.completed
-                            ? 'border-[var(--color-border)]'
-                            : 'border-[var(--color-border-uncompleted-task)]'
-                            } ${task.pinned !== 'none' ? 'ring-2 ring-[var(--color-ring)]' : ''}`}
+                          className={`flex items-start justify-between p-4 rounded-xl transition-all duration-200 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark ${task.pinned !== 'none' ? 'bg-light-primary/5 dark:bg-dark-primary/5' : ''}`}
                         >
                           <div className="flex items-start space-x-3 flex-1">
                             <button
                               onClick={() => toggleComplete(task.id)}
-                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors mt-1 flex-shrink-0 ${task.completed ?
-                                'bg-[var(--color-button-primary)] border-[var(--color-checkbox-border-completed)] text-[var(--color-text-on-primary)]' :
-                                'border-[var(--color-checkbox-border)] hover:border-[var(--color-checkbox-border-hover)]'}`}
+                              className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-150 mt-1 flex-shrink-0 ${task.completed ?
+                                'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark bg-light-primary text-light-primary-text' :
+                                'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'}`}
                             >
                               {task.completed && <Check size={16} />}
                             </button>
@@ -1818,19 +1713,19 @@ function App() {
                                     value={editText}
                                     onChange={(e) => setEditText(e.target.value)}
                                     onKeyDown={handleEditKeyPress}
-                                    className="w-full px-3 py-2 rounded-lg border-2 border-[var(--color-border)] focus:border-[var(--color-focus)] focus:outline-none bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] resize-none"
+                                    className="w-full px-3 py-2 rounded-lg bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none resize-none"
                                     rows="3"
                                   />
                                   <div className="flex gap-2 mt-2">
                                     <button
                                       onClick={saveEditedTask}
-                                      className="px-3 py-1 rounded bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)] text-sm"
+                                      className="px-3 py-1 rounded bg-light-primary text-light-primary-text text-sm shadow-neumorphic-outset-sm active:shadow-neumorphic-inset-sm"
                                     >
                                       Save
                                     </button>
                                     <button
                                       onClick={() => setEditingTask(null)}
-                                      className="px-3 py-1 rounded bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] text-sm"
+                                      className="px-3 py-1 rounded text-sm shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"
                                     >
                                       Cancel
                                     </button>
@@ -1838,11 +1733,11 @@ function App() {
                                 </div>
                               ) : (
                                 isNsfw && !isRevealed ? (
-                                  <div className="flex items-center gap-2 p-2 rounded-lg bg-opacity-50">
-                                    <span className="text-[var(--color-text-muted)]">Content hidden (NSFW tag)</span>
+                                  <div className="flex items-center gap-2 p-2 rounded-lg">
+                                    <span className="text-light-text-muted dark:text-dark-text-muted">Content hidden (NSFW tag)</span>
                                     <button
                                       onClick={() => setRevealedNsfw(prev => ({ ...prev, [task.id]: true }))}
-                                      className="px-2 py-1 rounded bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] text-sm flex items-center gap-1 hover:bg-[var(--color-button-secondary-hover)]"
+                                      className="px-2 py-1 rounded text-sm flex items-center gap-1 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"
                                     >
                                       <Eye size={14} /> Show
                                     </button>
@@ -1852,7 +1747,7 @@ function App() {
                                     {isNsfw && isRevealed && (
                                       <button
                                         onClick={() => setRevealedNsfw(prev => ({ ...prev, [task.id]: false }))}
-                                        className="absolute -top-2 -right-2 p-1 rounded-full bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]"
+                                        className="absolute -top-2 -right-2 p-1 rounded-full shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"
                                         title="Hide content"
                                       >
                                         <EyeOff size={14} />
@@ -1860,19 +1755,19 @@ function App() {
                                     )}
                                     <span
                                       className={`${task.completed ?
-                                        'text-[var(--color-text-light)] line-through' :
-                                        'text-[var(--color-text-primary)]'
+                                        'text-light-text-muted dark:text-dark-text-muted line-through' :
+                                        ''
                                         } whitespace-pre-wrap break-words`}
                                     >
                                       {renderTextWithLinks(task.text)}
                                     </span>
                                     {(task.pinned === 'none' || task.pinned === 'local') && task.dueDate && (
-                                      <div className="text-xs text-[var(--color-text-light)] mt-1">
+                                      <div className="text-xs text-light-text-muted dark:text-dark-text-muted mt-1">
                                         Due: {formatDate(task.dueDate)}
                                       </div>
                                     )}
                                     {task.pinned === 'global' && task.createdAt && (
-                                      <div className="text-xs text-[var(--color-text-light)] mt-1">
+                                      <div className="text-xs text-light-text-muted dark:text-dark-text-muted mt-1">
                                         Created: {formatDate(task.createdAt)}
                                       </div>
                                     )}
@@ -1884,17 +1779,17 @@ function App() {
                           <div className="flex items-center space-x-1 ml-2 self-center">
                             <button
                               onClick={() => toggleImportance(task.id)}
-                              className="p-1 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)] transition-colors"
+                              className={`p-1 rounded-full transition-colors ${task.importance ? 'text-amber-500' : 'text-light-text-muted dark:text-dark-text-muted'}`}
                               title={task.importance ? 'Mark as Not Important' : 'Mark as Important'}
                             >
-                              <Star size={16} className={`${task.importance ? 'fill-amber-400 text-amber-500' : 'fill-none'}`} />
+                              <Star size={16} className={`${task.importance ? 'fill-amber-400' : 'fill-none'}`} />
                             </button>
                             <button
                               onClick={() => toggleUrgency(task.id)}
-                              className="p-1 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)] transition-colors"
+                              className={`p-1 rounded-full transition-colors ${task.urgency ? 'text-orange-500' : 'text-light-text-muted dark:text-dark-text-muted'}`}
                               title={task.urgency ? 'Mark as Not Urgent' : 'Mark as Urgent'}
                             >
-                              <Flame size={16} className={`${task.urgency ? 'fill-orange-500 text-orange-600' : 'fill-none'}`} />
+                              <Flame size={16} className={`${task.urgency ? 'fill-orange-500' : 'fill-none'}`} />
                             </button>
                             <div className="relative w-6 h-6 flex items-center justify-center">
                               <select
@@ -1908,9 +1803,9 @@ function App() {
                                 <option value="local">Local</option>
                               </select>
                               <div className="pointer-events-none">
-                                {task.pinned === 'global' && <Shield size={16} className="text-[var(--color-text-secondary)]" />}
-                                {task.pinned === 'local' && <Pin size={16} className="text-[var(--color-text-secondary)]" />}
-                                {task.pinned === 'none' && <PinOff size={16} className="text-[var(--color-text-light)]" />}
+                                {task.pinned === 'global' && <Shield size={16} />}
+                                {task.pinned === 'local' && <Pin size={16} />}
+                                {task.pinned === 'none' && <PinOff size={16} className="text-light-text-muted dark:text-dark-text-muted" />}
                               </div>
                             </div>
                           </div>
@@ -1922,45 +1817,44 @@ function App() {
               </div>
             ) : (
               // Eisenhower Matrix View
-              <div className="bg-[var(--color-bg-primary)] rounded-2xl shadow-lg p-6">
+              <div className="bg-light-surface dark:bg-dark-surface rounded-2xl shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark p-6">
                 <div className="mb-4">
 
-                  <p className="text-[var(--color-text-secondary)]">
+                  <p className="text-light-text-muted dark:text-dark-text-muted">
                     {getTaskListHeaderText()} - {activeTasks.length} tasks
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:h-[70vh]">
                   {[
-                    { title: 'Do', description: 'Urgent & Important', tasks: matrixTasks.doTasks, bgColorVar: 'var(--color-matrix-do-bg)' },
-                    { title: 'Schedule', description: 'Important & Not Urgent', tasks: matrixTasks.scheduleTasks, bgColorVar: 'var(--color-matrix-schedule-bg)' },
-                    { title: 'Delegate', description: 'Urgent & Not Important', tasks: matrixTasks.delegateTasks, bgColorVar: 'var(--color-matrix-delegate-bg)' },
-                    { title: 'Eliminate', description: 'Not Urgent & Not Important', tasks: matrixTasks.eliminateTasks, bgColorVar: 'var(--color-matrix-eliminate-bg)' },
-                  ].map(({ title, description, tasks, bgColorVar }) => (
+                    { title: 'Do', description: 'Urgent & Important', tasks: matrixTasks.doTasks, style: 'border-red-500/50' },
+                    { title: 'Schedule', description: 'Important & Not Urgent', tasks: matrixTasks.scheduleTasks, style: 'border-green-500/50' },
+                    { title: 'Delegate', description: 'Urgent & Not Important', tasks: matrixTasks.delegateTasks, style: 'border-blue-500/50' },
+                    { title: 'Eliminate', description: 'Not Urgent & Not Important', tasks: matrixTasks.eliminateTasks, style: 'border-gray-500/50' },
+                  ].map(({ title, description, tasks, style }) => (
                     <div
                       key={title}
-                      className={`rounded-xl p-4 flex flex-col min-h-[50vh] md:min-h-0 md:h-full`}
-                      style={{ backgroundColor: bgColorVar }}
+                      className={`rounded-xl p-4 flex flex-col min-h-[50vh] md:min-h-0 md:h-full shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark border-t-4 ${style}`}
                     >
-                      <h4 className="font-bold text-lg text-[var(--color-text-primary)]">{title}</h4>
-                      <p className="text-sm text-[var(--color-text-muted)] mb-4 flex-shrink-0">{description}</p>
+                      <h4 className="font-bold text-lg">{title}</h4>
+                      <p className="text-sm text-light-text-muted dark:text-dark-text-muted mb-4 flex-shrink-0">{description}</p>
                       <div className="overflow-y-auto h-full -mr-2">
                         <ul className="space-y-3 pr-2">
                           {tasks.length > 0 ? (
                             tasks.map(task => (
-                              <li key={task.id} className="flex items-start justify-between p-3 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+                              <li key={task.id} className="flex items-start justify-between p-3 rounded-xl shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark">
                                 <div className="flex items-start space-x-3 flex-1">
-                                  <button onClick={() => toggleComplete(task.id)} className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors mt-1 flex-shrink-0 border-[var(--color-checkbox-border)] hover:border-[var(--color-checkbox-border-hover)]" />
+                                  <button onClick={() => toggleComplete(task.id)} className="w-5 h-5 rounded-full flex items-center justify-center transition-all duration-150 mt-1 flex-shrink-0 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark" />
                                   <div className="flex-1 text-sm" onDoubleClick={() => handleDoubleClick(task)}>
-                                    <span className="text-[var(--color-text-primary)] whitespace-pre-wrap break-words">{renderTextWithLinks(task.text)}</span>
-                                    {task.dueDate && <div className="text-xs text-[var(--color-text-light)] mt-1">Due: {formatDate(task.dueDate)}</div>}
+                                    <span className="whitespace-pre-wrap break-words">{renderTextWithLinks(task.text)}</span>
+                                    {task.dueDate && <div className="text-xs text-light-text-muted dark:text-dark-text-muted mt-1">Due: {formatDate(task.dueDate)}</div>}
                                   </div>
                                 </div>
                                 <div className="flex items-center space-x-1 ml-2 self-center">
-                                  <button onClick={() => toggleImportance(task.id)} className="p-1 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)] transition-colors" title={task.importance ? 'Mark as Not Important' : 'Mark as Important'}>
-                                    <Star size={14} className={`${task.importance ? 'fill-amber-400 text-amber-500' : 'fill-none'}`} />
+                                  <button onClick={() => toggleImportance(task.id)} className={`p-1 rounded-full transition-colors ${task.importance ? 'text-amber-500' : 'text-light-text-muted dark:text-dark-text-muted'}`} title={task.importance ? 'Mark as Not Important' : 'Mark as Important'}>
+                                    <Star size={14} className={`${task.importance ? 'fill-amber-400' : 'fill-none'}`} />
                                   </button>
-                                  <button onClick={() => toggleUrgency(task.id)} className="p-1 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)] transition-colors" title={task.urgency ? 'Mark as Not Urgent' : 'Mark as Urgent'}>
-                                    <Flame size={14} className={`${task.urgency ? 'fill-orange-500 text-orange-600' : 'fill-none'}`} />
+                                  <button onClick={() => toggleUrgency(task.id)} className={`p-1 rounded-full transition-colors ${task.urgency ? 'text-orange-500' : 'text-light-text-muted dark:text-dark-text-muted'}`} title={task.urgency ? 'Mark as Not Urgent' : 'Mark as Urgent'}>
+                                    <Flame size={14} className={`${task.urgency ? 'fill-orange-500' : 'fill-none'}`} />
                                   </button>
                                   <div className="relative w-5 h-5 flex items-center justify-center">
                                     <select value={task.pinned} onChange={(e) => updatePinMode(task.id, e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" title={`Change pin mode (current: ${task.pinned})`}>
@@ -1969,16 +1863,16 @@ function App() {
                                       <option value="local">Local</option>
                                     </select>
                                     <div className="pointer-events-none">
-                                      {task.pinned === 'global' && <Shield size={14} className="text-[var(--color-text-secondary)]" />}
-                                      {task.pinned === 'local' && <Pin size={14} className="text-[var(--color-text-secondary)]" />}
-                                      {task.pinned === 'none' && <PinOff size={14} className="text-[var(--color-text-light)]" />}
+                                      {task.pinned === 'global' && <Shield size={14} />}
+                                      {task.pinned === 'local' && <Pin size={14} />}
+                                      {task.pinned === 'none' && <PinOff size={14} className="text-light-text-muted dark:text-dark-text-muted" />}
                                     </div>
                                   </div>
                                 </div>
                               </li>
                             ))
                           ) : (
-                            <p className="text-sm text-[var(--color-text-muted)] italic p-4 text-center">No tasks here.</p>
+                            <p className="text-sm text-light-text-muted dark:text-dark-text-muted italic p-4 text-center">No tasks here.</p>
                           )}
                         </ul>
                       </div>
@@ -1994,13 +1888,13 @@ function App() {
       {/* Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--color-bg-primary)] rounded-2xl shadow-xl w-full max-w-md">
+          <div className="bg-light-surface dark:bg-dark-surface rounded-2xl shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark w-full max-w-md">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-[var(--color-text-primary)]">Settings</h3>
+                <h3 className="text-xl font-bold">Settings</h3>
                 <button
                   onClick={() => setShowSettings(false)}
-                  className="text-[var(--color-text-light)] hover:text-[var(--color-text-secondary)]"
+                  className="text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text"
                 >
                   <X size={24} />
                 </button>
@@ -2009,141 +1903,116 @@ function App() {
               <div className="space-y-6">
                 {/* Locale Setting */}
                 <div>
-                  <label className="block text-[var(--color-text-primary)] font-medium mb-2">
+                  <label className="block font-medium mb-2">
                     Language & Region
                   </label>
-                  <select
-                    value={locale}
-                    onChange={(e) => setLocale(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-[var(--color-border)] focus:border-[var(--color-focus)] focus:outline-none bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
-                  >
-                    <option value="en-US">English (United States)</option>
-                    <option value="en-GB">English (United Kingdom)</option>
-                    <option value="de-DE">Deutsch (Deutschland)</option>
-                    <option value="fr-FR">Français (France)</option>
-                    <option value="es-ES">Español (España)</option>
-                    <option value="ru-RU">Русский (Россия)</option>
-                    <option value="zh-CN">中文 (中国)</option>
-                    <option value="ja-JP">日本語 (日本)</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={locale}
+                      onChange={(e) => setLocale(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-light-bg dark:bg-dark-bg shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none appearance-none pr-10"
+                    >
+                      <option value="en-US">English (United States)</option>
+                      <option value="en-GB">English (United Kingdom)</option>
+                      <option value="de-DE">Deutsch (Deutschland)</option>
+                      <option value="fr-FR">Français (France)</option>
+                      <option value="es-ES">Español (España)</option>
+                      <option value="ru-RU">Русский (Россия)</option>
+                      <option value="zh-CN">中文 (中国)</option>
+                      <option value="ja-JP">日本語 (日本)</option>
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none text-light-text-muted dark:text-dark-text-muted" />
+                  </div>
                 </div>
 
                 {/* NSFW Tags Setting */}
                 <div>
-                  <label className="block text-[var(--color-text-primary)] font-medium mb-2">
+                  <label className="block font-medium mb-2">
                     NSFW Tags
                   </label>
                   <textarea
                     value={nsfwTags}
                     onChange={(e) => setNsfwTags(e.target.value)}
                     placeholder="Enter comma-separated tags to hide, e.g., work,secret"
-                    className="w-full px-4 py-3 rounded-xl border-2 border-[var(--color-border)] focus:border-[var(--color-focus)] focus:outline-none bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] resize-y"
+                    className="w-full px-4 py-3 rounded-xl bg-light-bg dark:bg-dark-bg shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none resize-y"
                     rows="3"
                   />
-                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                  <p className="text-xs text-light-text-muted dark:text-dark-text-muted mt-1">
                     Tasks containing these tags will be hidden by default.
                   </p>
                 </div>
 
                 {/* Theme Setting */}
                 <div>
-                  <label className="block text-[var(--color-text-primary)] font-medium mb-2">
+                  <label className="block font-medium mb-2">
                     Theme Color
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {Object.keys(themes).map((themeKey) => (
-                      <button
-                        key={themeKey}
-                        onClick={() => setTheme(themeKey)}
-                        className={`p-4 rounded-xl border-2 transition-colors bg-[var(--color-bg-primary)] ${theme === themeKey
-                          ? 'border-[var(--color-theme-select-border-active)] ring-2 ring-[var(--color-theme-select-ring-active)]'
-                          : 'border-[var(--color-border)] hover:ring-2 hover:ring-[var(--color-theme-select-ring-hover)]'
-                          }`}
+                  <div className="grid grid-cols-3 gap-3 p-1 rounded-xl shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark">
+                    {[
+                      { id: 'light', label: 'Light', icon: Sun },
+                      { id: 'dark', label: 'Dark', icon: Moon },
+                      { id: 'system', label: 'System', icon: Monitor },
+                    ].map(({ id, label, icon: Icon }) => (
+                      <button key={id} onClick={() => setTheme(id)}
+                        className={`p-2 rounded-lg flex flex-col items-center gap-1 transition-all duration-150 ${theme === id ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-light-primary' : ''}`}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-6 h-6 rounded-full" style={{ backgroundColor: themes[themeKey].color }}></div>
-                          <span className="capitalize text-[var(--color-text-primary)]">
-                            {themes[themeKey].name}
-                          </span>
-                        </div>
+                        <Icon size={20} />
+                        <span className="text-xs font-semibold">{label}</span>
                       </button>
                     ))}
-                    <button
-                      onClick={() => setTheme('custom')}
-                      className={`p-4 rounded-xl border-2 transition-colors bg-[var(--color-bg-primary)] ${theme === 'custom'
-                        ? 'border-[var(--color-theme-select-border-active)] ring-2 ring-[var(--color-theme-select-ring-active)]'
-                        : 'border-[var(--color-border)] hover:ring-2 hover:ring-[var(--color-theme-select-ring-hover)]'
-                        }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-red-500 via-yellow-500 to-blue-500"></div>
-                        <span className="capitalize text-[var(--color-text-primary)]">
-                          Custom
-                        </span>
-                      </div>
-                    </button>
                   </div>
-                  {theme === 'custom' && (
-                    <div className="mt-4 flex items-center gap-4">
-                      <label htmlFor="customColorPicker" className="text-[var(--color-text-secondary)]">Pick a color:</label>
-                      <input
-                        id="customColorPicker"
-                        type="color"
-                        value={customColor}
-                        onChange={(e) => setCustomColor(e.target.value)}
-                        className="w-12 h-10 p-1 bg-transparent border-none rounded-md cursor-pointer"
-                      />
-                    </div>
-                  )}
                 </div>
 
                 {/* Week Start Setting */}
                 <div>
-                  <label className="block text-[var(--color-text-primary)] font-medium mb-2">
+                  <label className="block font-medium mb-2">
                     First Day of Week
                   </label>
-                  <select
-                    value={weekStart}
-                    onChange={(e) => setWeekStart(parseInt(e.target.value))}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-[var(--color-border)] focus:border-[var(--color-focus)] focus:outline-none bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
-                  >
-                    <option value="0">Sunday</option>
-                    <option value="1">Monday</option>
-                    <option value="2">Tuesday</option>
-                    <option value="3">Wednesday</option>
-                    <option value="4">Thursday</option>
-                    <option value="5">Friday</option>
-                    <option value="6">Saturday</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={weekStart}
+                      onChange={(e) => setWeekStart(parseInt(e.target.value))}
+                      className="w-full px-4 py-3 rounded-xl bg-light-bg dark:bg-dark-bg shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none appearance-none pr-10"
+                    >
+                      <option value="0">Sunday</option>
+                      <option value="1">Monday</option>
+                      <option value="2">Tuesday</option>
+                      <option value="3">Wednesday</option>
+                      <option value="4">Thursday</option>
+                      <option value="5">Friday</option>
+                      <option value="6">Saturday</option>
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none text-light-text-muted dark:text-dark-text-muted" />
+                  </div>
                 </div>
 
                 {/* Danger Zone */}
-                <div className="border-t pt-6 mt-6 border-[var(--color-border-danger)]">
-                  <label className="block text-[var(--color-text-danger)] font-medium mb-2">
+                <div className="border-t pt-6 mt-6 border-light-danger/50 dark:border-dark-danger/50">
+                  <label className="block text-light-danger dark:text-dark-danger font-medium mb-2">
                     Danger Zone
                   </label>
                   <button
                     onClick={handleClearDatabase}
-                    className="w-full px-4 py-3 rounded-xl bg-[var(--color-button-danger)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-button-danger-hover)] transition-colors"
+                    className="w-full px-4 py-3 rounded-xl text-light-danger dark:text-dark-danger shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark active:shadow-neumorphic-inset active:dark:shadow-neumorphic-inset-dark transition-all"
                   >
                     Clear All Data
                   </button>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                  <p className="text-xs text-light-text-muted dark:text-dark-text-muted mt-1">
                     This will permanently delete all your tasks, archives, and settings. This action cannot be undone.
                   </p>
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-8">
+              <div className="flex gap-4 mt-8">
                 <button
                   onClick={saveSettings}
-                  className="flex-1 px-4 py-3 rounded-xl bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-button-primary-hover)]"
+                  className="flex-1 px-4 py-3 rounded-xl font-semibold text-light-primary dark:text-dark-primary shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark active:shadow-neumorphic-inset active:dark:shadow-neumorphic-inset-dark transition-all"
                 >
                   Save
                 </button>
                 <button
                   onClick={() => setShowSettings(false)}
-                  className="flex-1 px-4 py-3 rounded-xl bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]"
+                  className="flex-1 px-4 py-3 rounded-xl shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark active:shadow-neumorphic-inset active:dark:shadow-neumorphic-inset-dark transition-all"
                 >
                   Cancel
                 </button>
@@ -2156,8 +2025,9 @@ function App() {
   );
 }
 
-const PomodoroTimer = ({ pomodoro, onPauseResume, onReset, blockTitle }) => {
-  const { timeLeft, duration, isPaused, isActive, mode, queue, currentSliceIndex } = pomodoro;
+const PomodoroTimer = ({ pomodoro, onReset, blockTitle }) => {
+  const { timeLeft, duration, isActive, mode, queue, currentSliceIndex } = pomodoro;
+
 
   if (!isActive) {
     return null;
@@ -2168,28 +2038,25 @@ const PomodoroTimer = ({ pomodoro, onPauseResume, onReset, blockTitle }) => {
   const progress = duration > 0 ? ((duration - timeLeft) / duration) * 100 : 0;
   const isWork = mode === 'work';
   const title = isWork ? 'Focus Session' : 'Break Time';
-  const progressColor = isWork ? 'var(--color-button-primary)' : 'var(--color-select-hover)';
+  const progressColor = isWork ? 'bg-light-primary' : 'bg-green-500';
 
   return (
-    <div className="mt-4 p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
-      <h4 className="text-sm font-semibold text-[var(--color-text-secondary)] mb-2 flex items-center gap-2">
+    <div className="mt-4 p-4 rounded-xl shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark">
+      <h4 className="text-sm font-semibold text-light-text-muted dark:text-dark-text-muted mb-2 flex items-center gap-2">
         {isWork ? <Flame size={16} /> : <Coffee size={16} />}
         {title}
         {queue.length > 0 && <span className="text-xs font-mono">({currentSliceIndex + 1}/{queue.length})</span>}
       </h4>
-      <p className="text-xs text-[var(--color-text-muted)] mb-3 truncate" title={blockTitle}>On: {blockTitle}</p>
-      <div className="text-center font-mono text-5xl font-bold text-[var(--color-text-primary)] my-4">
+      <p className="text-xs text-light-text-muted dark:text-dark-text-muted mb-3 truncate" title={blockTitle}>On: {blockTitle}</p>
+      <div className="text-center font-mono text-5xl font-bold my-4">
         {minutes}:{seconds}
       </div>
-      <div className="w-full bg-[var(--color-border)] rounded-full h-2 mb-4">
-        <div className="h-2 rounded-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: progressColor }}></div>
+      <div className="w-full bg-light-text/10 dark:bg-dark-text/10 rounded-full h-2 mb-4 shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark">
+        <div className={`h-2 rounded-full transition-all duration-500 ${progressColor}`} style={{ width: `${progress}%` }}></div>
       </div>
       <div className="flex justify-center gap-4">
-        <button onClick={onPauseResume} className="p-3 rounded-full bg-[var(--color-button-primary)] text-[var(--color-text-on-primary)] hover:bg-[var(--color-button-primary-hover)]" title={isPaused ? "Resume" : "Pause"}>
-          {isPaused ? <Play size={20} /> : <Pause size={20} />}
-        </button>
-        <button onClick={onReset} className="p-3 rounded-full bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)]" title="Reset">
-          <RotateCcw size={20} />
+        <button onClick={onReset} className="p-3 rounded-full shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark" title="Stop">
+          <Square size={20} />
         </button>
       </div>
     </div>
@@ -2259,7 +2126,7 @@ const getLayoutForPlannerBlocks = (blocks) => {
   return laidOutBlocks;
 };
 
-const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWorkSettings, currentTime, locale, savePlannerBlockToDB, deletePlannerBlockFromDB, setViewMode, pomodoro, startPomodoro, handlePauseResumePomodoro, handleResetPomodoro }) => {
+const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWorkSettings, currentTime, locale, savePlannerBlockToDB, deletePlannerBlockFromDB, setViewMode, pomodoro, startPomodoro, handleResetPomodoro }) => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showAddBlockModal, setShowAddBlockModal] = useState(false);
   const [newBlockData, setNewBlockData] = useState({
@@ -2278,12 +2145,12 @@ const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWork
   const laidOutBlocks = React.useMemo(() => getLayoutForPlannerBlocks(plannerBlocks), [plannerBlocks]);
 
   const colors = [
-    'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500',
-    'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-red-500'
+    'border-blue-500', 'border-green-500', 'border-purple-500', 'border-pink-500',
+    'border-indigo-500', 'border-teal-500', 'border-orange-500', 'border-red-500'
   ];
 
   const isCurrentBlock = (startTime, endTime) => {
-    const now = currentTime;
+    const now = new Date(); // Use real time for "Now" indicator
     const [startHours, startMinutes] = startTime.split(':').map(Number);
     const [endHours, endMinutes] = endTime.split(':').map(Number);
 
@@ -2386,28 +2253,28 @@ const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWork
   const timeSlots = generateTimeSlots();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--color-gradient-from)] to-[var(--color-gradient-to)]">
+    <div className="min-h-screen bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text transition-colors duration-300">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Menu */}
           <div className="lg:w-1/3">
-            <div className="sticky top-4 bg-[var(--color-bg-primary)] rounded-2xl shadow-lg p-6 flex flex-col">
+            <div className="sticky top-8 bg-light-surface dark:bg-dark-surface rounded-2xl shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark p-6 flex flex-col">
               <button
-                onClick={() => setViewMode('list')} className="mb-4 flex items-center justify-center gap-2 px-3 py-3 rounded-lg transition-colors bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setViewMode('list')} className="mb-4 flex items-center justify-center gap-2 px-3 py-3 rounded-lg transition-all duration-150 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"
               >
-                <ChevronLeft className="w-5 h-5 text-[var(--color-text-secondary)]" />
+                <ChevronLeft className="w-5 h-5" />
               </button>
               <div className="flex flex-row gap-4 mb-4">
                 <div className="flex-1 grid grid-cols-2 gap-2">
-                  <button onClick={() => { setEditingBlock(null); setNewBlockData({ title: '', startTime: '', endTime: '', color: 'bg-blue-500' }); setShowAddBlockModal(true); }} className="flex items-center justify-center gap-2 px-3 py-3 rounded-lg transition-colors bg-[var(--color-button-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-button-secondary-hover)] disabled:opacity-50 disabled:cursor-not-allowed">
-                    <Plus className="w-5 h-5 text-[var(--color-text-secondary)]" />
+                  <button onClick={() => { setEditingBlock(null); setNewBlockData({ title: '', startTime: '', endTime: '', color: 'bg-blue-500' }); setShowAddBlockModal(true); }} className="flex items-center justify-center gap-2 px-3 py-3 rounded-lg transition-all duration-150 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark">
+                    <Plus className="w-5 h-5" />
                     <span>New block</span>
                   </button>
                 </div>
                 {/* Settings Button */}
                 <button
                   onClick={() => { setModalSettings(workSettings); setShowSettingsModal(true); }}
-                  className="p-4 rounded-lg bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)]"
+                  className="p-4 rounded-lg transition-all duration-150 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"
                 >
                   <Settings size={20} />
                 </button>
@@ -2415,7 +2282,6 @@ const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWork
               <div>
                 <PomodoroTimer
                   pomodoro={pomodoro}
-                  onPauseResume={handlePauseResumePomodoro}
                   onReset={handleResetPomodoro}
                   blockTitle={pomodoro.blockId ? plannerBlocks.find(b => b.id === pomodoro.blockId)?.title : ''}
                 />
@@ -2424,25 +2290,25 @@ const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWork
           </div>
           {/* Day calendar */}
           <div className="lg:w-2/3">
-            <div className="bg-[var(--color-bg-primary)] rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-light-surface dark:bg-dark-surface rounded-xl shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark overflow-hidden">
               <div className="flex">
-                <div className="w-20 border-r border-[var(--color-border)]">
-                  <div className="h-16 border-b border-[var(--color-border)] flex items-center justify-center text-sm font-medium text-[var(--color-text-muted)]">Time</div>
+                <div className="w-20 border-r border-light-text/10 dark:border-dark-text/10">
+                  <div className="h-16 border-b border-light-text/10 dark:border-dark-text/10 flex items-center justify-center text-sm font-medium text-light-text-muted dark:text-dark-text-muted">Time</div>
                   {timeSlots.map((time, index) => (
-                    <div key={time} className={`h-10 border-b border-[var(--color-border)] flex items-center justify-center text-xs ${index % 2 === 0 ? 'bg-[var(--color-bg-secondary)]' : 'bg-[var(--color-bg-primary)]'}`}>{time}</div>
+                    <div key={time} className={`h-10 border-b border-light-text/10 dark:border-dark-text/10 flex items-center justify-center text-xs ${index % 2 === 0 ? 'bg-light-bg/50 dark:bg-dark-bg/50' : ''}`}>{time}</div>
                   ))}
                 </div>
 
                 <div className="flex-1 relative">
-                  <div className="h-16 border-b border-[var(--color-border)] flex items-center justify-center">
-                    <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">{currentTime.toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h2>
+                  <div className="h-16 border-b border-light-text/10 dark:border-dark-text/10 flex items-center justify-center">
+                    <h2 className="text-lg font-semibold">{currentTime.toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h2>
                   </div>
                   <div className="relative px-1">
                     {timeSlots.map((time, index) => (
-                      <div key={time} className={`h-10 border-b border-[var(--color-border)] ${index % 2 === 0 ? 'bg-[var(--color-bg-secondary)]' : 'bg-[var(--color-bg-primary)]'}`} />
+                      <div key={time} className={`h-10 border-b border-light-text/10 dark:border-dark-text/10 ${index % 2 === 0 ? 'bg-light-bg/50 dark:bg-dark-bg/50' : ''}`} />
                     ))}
                     {laidOutBlocks.map((block) => (
-                      <div key={block.id} className={`absolute ${block.color} rounded-lg p-3 text-white shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer ${isCurrentBlock(block.startTime, block.endTime) ? 'ring-2 ring-white ring-opacity-50 ring-offset-2' : ''} ${block.layout.col > 0 ? 'border-l-2 border-white/20' : ''}`} style={{ top: `${timeToPosition(block.startTime)}px`, height: `${blockHeight(block.startTime, block.endTime)}px`, left: `${block.layout.left}%`, width: `calc(${block.layout.width}% - 2px)`, minHeight: '40px' }}>
+                      <div key={block.id} className={`absolute bg-light-surface dark:bg-dark-surface border-l-4 ${block.color} rounded-lg p-3 text-light-text dark:text-dark-text shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark transition-all duration-200 cursor-pointer ${isCurrentBlock(block.startTime, block.endTime) ? 'ring-2 ring-light-primary dark:ring-dark-primary' : ''}`} style={{ top: `${timeToPosition(block.startTime)}px`, height: `${blockHeight(block.startTime, block.endTime)}px`, left: `${block.layout.left}%`, width: `calc(${block.layout.width}% - 2px)`, minHeight: '40px' }}>
                         <div className="flex justify-between items-start h-full w-full">
                           <div className="flex-1 overflow-hidden">
                             <h3 className="font-semibold truncate" title={block.title}>{block.title}</h3>
@@ -2450,21 +2316,21 @@ const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWork
                           </div>
                           <div className="flex items-center space-x-1 flex-shrink-0 ml-2">
                             {isCurrentBlock(block.startTime, block.endTime) && !pomodoro.isActive && (
-                              <button onClick={(e) => { e.stopPropagation(); startPomodoro(block.id); }} className="p-1 hover:bg-white/20 rounded-full transition-colors" title="Start Focus Session">
+                              <button onClick={(e) => { e.stopPropagation(); startPomodoro(block.id); }} className="p-1.5 rounded-full text-light-primary dark:text-dark-primary hover:bg-light-primary/10 dark:hover:bg-dark-primary/10 transition-colors" title="Start Focus Session">
                                 <Play className="w-4 h-4" />
                               </button>
                             )}
-                            <button onClick={(e) => { e.stopPropagation(); startEditBlock(block); }} className="p-1 hover:bg-white/20 rounded-full transition-colors" title="Edit Block"><Edit3 className="w-4 h-4" /></button>
-                            <button onClick={(e) => { e.stopPropagation(); deletePlannerBlock(block.id); }} className="p-1 hover:bg-white/20 rounded-full transition-colors" title="Delete Block"><Trash2 className="w-4 h-4" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); startEditBlock(block); }} className="p-1.5 rounded-full text-light-text-muted dark:text-dark-text-muted hover:bg-black/5 dark:hover:bg-white/5 transition-colors" title="Edit Block"><Edit3 className="w-4 h-4" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); deletePlannerBlock(block.id); }} className="p-1.5 rounded-full text-light-text-muted dark:text-dark-text-muted hover:text-light-danger dark:hover:text-dark-danger hover:bg-red-500/10 transition-colors" title="Delete Block"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </div>
                         {isCurrentBlock(block.startTime, block.endTime) && (
-                          <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">Now</div>
+                          <div className="absolute -top-2 -right-2 bg-light-primary text-light-primary-text text-xs font-bold px-2 py-1 rounded-full animate-pulse">Now</div>
                         )}
                       </div>
                     ))}
-                    <div className="absolute left-0 right-0 h-0.5 bg-red-500 z-10" style={{ top: `${timeToPosition(`${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`)}px` }}>
-                      <div className="absolute -top-1 -left-1 w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div className="absolute left-0 right-0 h-0.5 bg-light-primary z-10" style={{ top: `${timeToPosition(`${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)}px` }}>
+                      <div className="absolute -top-1 -left-1 w-3 h-3 bg-light-primary rounded-full"></div>
                     </div>
                   </div>
                 </div>
@@ -2476,36 +2342,36 @@ const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWork
       {
         showAddBlockModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-[var(--color-bg-primary)] rounded-xl shadow-2xl p-6 w-full max-w-md">
+            <div className="bg-light-surface dark:bg-dark-surface rounded-xl shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">{editingBlock ? 'Edit Block' : 'Add New Block'}</h2>
-                <button onClick={() => { setShowAddBlockModal(false); setEditingBlock(null); setNewBlockData({ title: '', startTime: '', endTime: '', color: 'bg-blue-500' }); }} className="p-2 hover:bg-[var(--color-button-secondary-hover)] rounded-full transition-colors"><X className="w-5 h-5 text-[var(--color-text-secondary)]" /></button>
+                <h2 className="text-2xl font-bold">{editingBlock ? 'Edit Block' : 'Add New Block'}</h2>
+                <button onClick={() => { setShowAddBlockModal(false); setEditingBlock(null); setNewBlockData({ title: '', startTime: '', endTime: '', color: 'bg-blue-500' }); }} className="p-2 rounded-full transition-all duration-150 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"><X className="w-5 h-5" /></button>
               </div>
               <div className="space-y-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Block Title</label>
-                  <input type="text" placeholder="Enter title" value={newBlockData.title} onChange={(e) => setNewBlockData({ ...newBlockData, title: e.target.value })} className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent bg-[var(--color-bg-secondary)]" />
+                  <label className="block text-sm font-medium text-light-text-muted dark:text-dark-text-muted mb-2">Block Title</label>
+                  <input type="text" placeholder="Enter title" value={newBlockData.title} onChange={(e) => setNewBlockData({ ...newBlockData, title: e.target.value })} className="w-full px-4 py-2 rounded-lg bg-light-bg dark:bg-dark-bg shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Start Time</label>
-                    <input type="time" value={newBlockData.startTime} onChange={(e) => setNewBlockData({ ...newBlockData, startTime: e.target.value })} className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent bg-[var(--color-bg-secondary)]" />
+                    <label className="block text-sm font-medium text-light-text-muted dark:text-dark-text-muted mb-2">Start Time</label>
+                    <input type="time" value={newBlockData.startTime} onChange={(e) => setNewBlockData({ ...newBlockData, startTime: e.target.value })} className="w-full px-4 py-2 rounded-lg bg-light-bg dark:bg-dark-bg shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">End Time</label>
-                    <input type="time" value={newBlockData.endTime} onChange={(e) => setNewBlockData({ ...newBlockData, endTime: e.target.value })} className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent bg-[var(--color-bg-secondary)]" />
+                    <label className="block text-sm font-medium text-light-text-muted dark:text-dark-text-muted mb-2">End Time</label>
+                    <input type="time" value={newBlockData.endTime} onChange={(e) => setNewBlockData({ ...newBlockData, endTime: e.target.value })} className="w-full px-4 py-2 rounded-lg bg-light-bg dark:bg-dark-bg shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Color</label>
-                  <select value={newBlockData.color} onChange={(e) => setNewBlockData({ ...newBlockData, color: e.target.value })} className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent bg-[var(--color-bg-secondary)]">
+                  <label className="block text-sm font-medium text-light-text-muted dark:text-dark-text-muted mb-2">Color</label>
+                  <select value={newBlockData.color} onChange={(e) => setNewBlockData({ ...newBlockData, color: e.target.value })} className="w-full px-4 py-2 rounded-lg bg-light-bg dark:bg-dark-bg shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none appearance-none">
                     {colors.map(color => (<option key={color} value={color}>{color.split('-')[1].charAt(0).toUpperCase() + color.split('-')[1].slice(1)}</option>))}
                   </select>
                 </div>
               </div>
               <div className="flex space-x-3">
-                <button onClick={editingBlock ? saveEditBlock : addPlannerBlock} className="flex-1 bg-[var(--color-button-primary)] hover:bg-[var(--color-button-primary-hover)] text-[var(--color-text-on-primary)] py-2 px-4 rounded-lg transition-colors">{editingBlock ? 'Save' : 'Add'}</button>
-                <button onClick={() => { setShowAddBlockModal(false); setEditingBlock(null); setNewBlockData({ title: '', startTime: '', endTime: '', color: 'bg-blue-500' }); }} className="flex-1 bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)] py-2 px-4 rounded-lg transition-colors">Cancel</button>
+                <button onClick={editingBlock ? saveEditBlock : addPlannerBlock} className="flex-1 font-semibold text-light-primary dark:text-dark-primary py-2 px-4 rounded-lg transition-all shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark active:shadow-neumorphic-inset active:dark:shadow-neumorphic-inset-dark">{editingBlock ? 'Save' : 'Add'}</button>
+                <button onClick={() => { setShowAddBlockModal(false); setEditingBlock(null); setNewBlockData({ title: '', startTime: '', endTime: '', color: 'bg-blue-500' }); }} className="flex-1 py-2 px-4 rounded-lg transition-all shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark active:shadow-neumorphic-inset active:dark:shadow-neumorphic-inset-dark">Cancel</button>
               </div>
             </div>
           </div>
@@ -2515,34 +2381,34 @@ const DayPlannerView = ({ plannerBlocks, setPlannerBlocks, workSettings, setWork
       {
         showSettingsModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-[var(--color-bg-primary)] rounded-xl shadow-2xl p-6 w-full max-w-md">
+            <div className="bg-light-surface dark:bg-dark-surface rounded-xl shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">Work Time Settings</h2>
-                <button onClick={() => setShowSettingsModal(false)} className="p-2 hover:bg-[var(--color-button-secondary-hover)] rounded-full transition-colors"><X className="w-5 h-5 text-[var(--color-text-secondary)]" /></button>
+                <h2 className="text-2xl font-bold">Work Time Settings</h2>
+                <button onClick={() => setShowSettingsModal(false)} className="p-2 rounded-full transition-all duration-150 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"><X className="w-5 h-5" /></button>
               </div>
               <div className="space-y-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Work Day Start</label>
-                  <input type="time" value={modalSettings.startTime} onChange={(e) => setModalSettings({ ...modalSettings, startTime: e.target.value })} className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent bg-[var(--color-bg-secondary)]" />
+                  <label className="block text-sm font-medium text-light-text-muted dark:text-dark-text-muted mb-2">Work Day Start</label>
+                  <input type="time" value={modalSettings.startTime} onChange={(e) => setModalSettings({ ...modalSettings, startTime: e.target.value })} className="w-full px-4 py-2 rounded-lg bg-light-bg dark:bg-dark-bg shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Work Day End</label>
-                  <input type="time" value={modalSettings.endTime} onChange={(e) => setModalSettings({ ...modalSettings, endTime: e.target.value })} className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent bg-[var(--color-bg-secondary)]" />
+                  <label className="block text-sm font-medium text-light-text-muted dark:text-dark-text-muted mb-2">Work Day End</label>
+                  <input type="time" value={modalSettings.endTime} onChange={(e) => setModalSettings({ ...modalSettings, endTime: e.target.value })} className="w-full px-4 py-2 rounded-lg bg-light-bg dark:bg-dark-bg shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none" />
                 </div>
-                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[var(--color-border)]">
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-light-text/10 dark:border-dark-text/10">
                   <div>
-                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Work Session (min)</label>
-                    <input type="number" min="1" value={modalSettings.pomodoroWorkDuration} onChange={(e) => setModalSettings({ ...modalSettings, pomodoroWorkDuration: parseInt(e.target.value, 10) || 0 })} className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent bg-[var(--color-bg-secondary)]" />
+                    <label className="block text-sm font-medium text-light-text-muted dark:text-dark-text-muted mb-2">Work Session (min)</label>
+                    <input type="number" min="1" value={modalSettings.pomodoroWorkDuration} onChange={(e) => setModalSettings({ ...modalSettings, pomodoroWorkDuration: parseInt(e.target.value, 10) || 0 })} className="w-full px-4 py-2 rounded-lg bg-light-bg dark:bg-dark-bg shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Break (min)</label>
-                    <input type="number" min="1" value={modalSettings.pomodoroBreakDuration} onChange={(e) => setModalSettings({ ...modalSettings, pomodoroBreakDuration: parseInt(e.target.value, 10) || 0 })} className="w-full px-4 py-2 border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-focus)] focus:border-transparent bg-[var(--color-bg-secondary)]" />
+                    <label className="block text-sm font-medium text-light-text-muted dark:text-dark-text-muted mb-2">Break (min)</label>
+                    <input type="number" min="1" value={modalSettings.pomodoroBreakDuration} onChange={(e) => setModalSettings({ ...modalSettings, pomodoroBreakDuration: parseInt(e.target.value, 10) || 0 })} className="w-full px-4 py-2 rounded-lg bg-light-bg dark:bg-dark-bg shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none" />
                   </div>
                 </div>
               </div>
               <div className="flex space-x-3">
-                <button onClick={handleSaveSettings} className="flex-1 bg-[var(--color-button-primary)] hover:bg-[var(--color-button-primary-hover)] text-[var(--color-text-on-primary)] py-2 px-4 rounded-lg transition-colors">Save</button>
-                <button onClick={() => setShowSettingsModal(false)} className="flex-1 bg-[var(--color-button-secondary)] hover:bg-[var(--color-button-secondary-hover)] text-[var(--color-text-secondary)] py-2 px-4 rounded-lg transition-colors">Cancel</button>
+                <button onClick={handleSaveSettings} className="flex-1 font-semibold text-light-primary dark:text-dark-primary py-2 px-4 rounded-lg transition-all shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark active:shadow-neumorphic-inset active:dark:shadow-neumorphic-inset-dark">Save</button>
+                <button onClick={() => setShowSettingsModal(false)} className="flex-1 py-2 px-4 rounded-lg transition-all shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark active:shadow-neumorphic-inset active:dark:shadow-neumorphic-inset-dark">Cancel</button>
               </div>
             </div>
           </div>
