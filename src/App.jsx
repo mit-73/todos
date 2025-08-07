@@ -152,6 +152,7 @@ function App() {
   const [highlightedTagIndex, setHighlightedTagIndex] = useState(0);
   const textareaRef = useRef(null);
   const suggestionsRef = useRef(null);
+  const editInputRef = useRef(null);
 
   // --- Day Planner State ---
   const [plannerBlocks, setPlannerBlocks] = useState([]);
@@ -606,7 +607,6 @@ function App() {
   // Focus edit input when editing
   useEffect(() => {
     if (editingTask && editInputRef.current) {
-      const editInputRef = useRef(null);
       editInputRef.current.focus();
       editInputRef.current.select();
     }
