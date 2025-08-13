@@ -1719,13 +1719,13 @@ function App() {
                                   <div className="flex gap-2 mt-2">
                                     <button
                                       onClick={saveEditedTask}
-                                      className="px-3 py-1 rounded bg-light-primary text-light-primary-text text-sm shadow-neumorphic-outset-sm active:shadow-neumorphic-inset-sm"
+                                      className="px-3 py-1 rounded-xl font-semibold text-light-primary dark:text-dark-primary shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark active:shadow-neumorphic-inset active:dark:shadow-neumorphic-inset-dark transition-all"
                                     >
                                       Save
                                     </button>
                                     <button
                                       onClick={() => setEditingTask(null)}
-                                      className="px-3 py-1 rounded text-sm shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"
+                                      className="px-3 py-1 rounded-xl shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark active:shadow-neumorphic-inset active:dark:shadow-neumorphic-inset-dark transition-all"
                                     >
                                       Cancel
                                     </button>
@@ -1840,37 +1840,108 @@ function App() {
                       <div className="overflow-y-auto h-full -mr-2">
                         <ul className="space-y-3 pr-2">
                           {tasks.length > 0 ? (
-                            tasks.map(task => (
-                              <li key={task.id} className="flex items-start justify-between p-3 rounded-xl shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark">
-                                <div className="flex items-start space-x-3 flex-1">
-                                  <button onClick={() => toggleComplete(task.id)} className="w-5 h-5 rounded-full flex items-center justify-center transition-all duration-150 mt-1 flex-shrink-0 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark" />
-                                  <div className="flex-1 text-sm" onDoubleClick={() => handleDoubleClick(task)}>
-                                    <span className="whitespace-pre-wrap break-words">{renderTextWithLinks(task.text)}</span>
-                                    {task.dueDate && <div className="text-xs text-light-text-muted dark:text-dark-text-muted mt-1">Due: {formatDate(task.dueDate)}</div>}
-                                  </div>
-                                </div>
-                                <div className="flex items-center space-x-1 ml-2 self-center">
-                                  <button onClick={() => toggleImportance(task.id)} className={`p-1 rounded-full transition-colors ${task.importance ? 'text-amber-500' : 'text-light-text-muted dark:text-dark-text-muted'}`} title={task.importance ? 'Mark as Not Important' : 'Mark as Important'}>
-                                    <Star size={14} className={`${task.importance ? 'fill-amber-400' : 'fill-none'}`} />
-                                  </button>
-                                  <button onClick={() => toggleUrgency(task.id)} className={`p-1 rounded-full transition-colors ${task.urgency ? 'text-orange-500' : 'text-light-text-muted dark:text-dark-text-muted'}`} title={task.urgency ? 'Mark as Not Urgent' : 'Mark as Urgent'}>
-                                    <Flame size={14} className={`${task.urgency ? 'fill-orange-500' : 'fill-none'}`} />
-                                  </button>
-                                  <div className="relative w-5 h-5 flex items-center justify-center">
-                                    <select value={task.pinned} onChange={(e) => updatePinMode(task.id, e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" title={`Change pin mode (current: ${task.pinned})`}>
-                                      <option value="none">None</option>
-                                      <option value="global">Global</option>
-                                      <option value="local">Local</option>
-                                    </select>
-                                    <div className="pointer-events-none">
-                                      {task.pinned === 'global' && <Shield size={14} />}
-                                      {task.pinned === 'local' && <Pin size={14} />}
-                                      {task.pinned === 'none' && <PinOff size={14} className="text-light-text-muted dark:text-dark-text-muted" />}
+                            tasks.map(task => {
+                              const isNsfw = checkIsNsfw(task.text, nsfwTagList);
+                              const isRevealed = revealedNsfw[task.id];
+
+                              return (
+                                <li key={task.id} className="flex items-start justify-between p-3 rounded-xl shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark">
+                                  <div className="flex items-start space-x-3 flex-1">
+                                    <button onClick={() => toggleComplete(task.id)} className="w-5 h-5 rounded-full flex items-center justify-center transition-all duration-150 mt-1 flex-shrink-0 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark" />
+                                    <div className="flex-1">
+                                      {editingTask === task.id ? (
+                                        <div className="w-full">
+                                          <textarea // TODO: This is the edit input, not the main one.
+                                            ref={editInputRef}
+                                            value={editText}
+                                            onChange={(e) => setEditText(e.target.value)}
+                                            onKeyDown={handleEditKeyPress}
+                                            className="w-full px-3 py-2 rounded-lg bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none resize-none"
+                                            rows="3"
+                                          />
+                                          <div className="flex gap-2 mt-2">
+                                            <button
+                                              onClick={saveEditedTask}
+                                              className="px-3 py-1 rounded-xl font-semibold text-light-primary dark:text-dark-primary shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark active:shadow-neumorphic-inset active:dark:shadow-neumorphic-inset-dark transition-all"
+                                            >
+                                              Save
+                                            </button>
+                                            <button
+                                              onClick={() => setEditingTask(null)}
+                                              className="px-3 py-1 rounded-xl shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark active:shadow-neumorphic-inset active:dark:shadow-neumorphic-inset-dark transition-all"
+                                            >
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        isNsfw && !isRevealed ? (
+                                          <div className="flex items-center gap-2 p-2 rounded-lg">
+                                            <span className="text-light-text-muted dark:text-dark-text-muted">Content hidden (NSFW tag)</span>
+                                            <button
+                                              onClick={() => setRevealedNsfw(prev => ({ ...prev, [task.id]: true }))}
+                                              className="px-2 py-1 rounded text-sm flex items-center gap-1 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"
+                                            >
+                                              <Eye size={14} /> Show
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <div className="relative" onDoubleClick={() => handleDoubleClick(task)}>
+                                            {isNsfw && isRevealed && (
+                                              <button
+                                                onClick={() => setRevealedNsfw(prev => ({ ...prev, [task.id]: false }))}
+                                                className="absolute -top-2 -right-2 p-1 rounded-full shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"
+                                                title="Hide content"
+                                              >
+                                                <EyeOff size={14} />
+                                              </button>
+                                            )}
+                                            <span
+                                              className={`${task.completed ?
+                                                'text-light-text-muted dark:text-dark-text-muted line-through' :
+                                                ''
+                                                } whitespace-pre-wrap break-words`}
+                                            >
+                                              {renderTextWithLinks(task.text)}
+                                            </span>
+                                            {(task.pinned === 'none' || task.pinned === 'local') && task.dueDate && (
+                                              <div className="text-xs text-light-text-muted dark:text-dark-text-muted mt-1">
+                                                Due: {formatDate(task.dueDate)}
+                                              </div>
+                                            )}
+                                            {task.pinned === 'global' && task.createdAt && (
+                                              <div className="text-xs text-light-text-muted dark:text-dark-text-muted mt-1">
+                                                Created: {formatDate(task.createdAt)}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )
+                                      )}
                                     </div>
                                   </div>
-                                </div>
-                              </li>
-                            ))
+                                  <div className="flex items-center space-x-1 ml-2 self-center">
+                                    <button onClick={() => toggleImportance(task.id)} className={`p-1 rounded-full transition-colors ${task.importance ? 'text-amber-500' : 'text-light-text-muted dark:text-dark-text-muted'}`} title={task.importance ? 'Mark as Not Important' : 'Mark as Important'}>
+                                      <Star size={14} className={`${task.importance ? 'fill-amber-400' : 'fill-none'}`} />
+                                    </button>
+                                    <button onClick={() => toggleUrgency(task.id)} className={`p-1 rounded-full transition-colors ${task.urgency ? 'text-orange-500' : 'text-light-text-muted dark:text-dark-text-muted'}`} title={task.urgency ? 'Mark as Not Urgent' : 'Mark as Urgent'}>
+                                      <Flame size={14} className={`${task.urgency ? 'fill-orange-500' : 'fill-none'}`} />
+                                    </button>
+                                    <div className="relative w-5 h-5 flex items-center justify-center">
+                                      <select value={task.pinned} onChange={(e) => updatePinMode(task.id, e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" title={`Change pin mode (current: ${task.pinned})`}>
+                                        <option value="none">None</option>
+                                        <option value="global">Global</option>
+                                        <option value="local">Local</option>
+                                      </select>
+                                      <div className="pointer-events-none">
+                                        {task.pinned === 'global' && <Shield size={14} />}
+                                        {task.pinned === 'local' && <Pin size={14} />}
+                                        {task.pinned === 'none' && <PinOff size={14} className="text-light-text-muted dark:text-dark-text-muted" />}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </li>
+                              )
+                            })
                           ) : (
                             <p className="text-sm text-light-text-muted dark:text-dark-text-muted italic p-4 text-center">No tasks here.</p>
                           )}
@@ -1954,7 +2025,7 @@ function App() {
                       { id: 'system', label: 'System', icon: Monitor },
                     ].map(({ id, label, icon: Icon }) => (
                       <button key={id} onClick={() => setTheme(id)}
-                        className={`p-2 rounded-lg flex flex-col items-center gap-1 transition-all duration-150 ${theme === id ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-light-primary' : ''}`}
+                        className={`p-2 rounded-lg flex flex-col items-center gap-1 transition-all duration-150 ${theme === id ? 'text-light-primary dark:text-dark-primary shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark' : 'text-light-text-muted dark:text-dark-text-muted hover:text-light-text dark:hover:text-dark-text'}`}
                       >
                         <Icon size={20} />
                         <span className="text-xs font-semibold">{label}</span>
