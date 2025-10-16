@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Trash2, Check, Pin, PinOff, Archive, List, Send, Shield, Settings, X, Eye, EyeOff, LoaderCircle, Star, Grid, Flame, Clock, Edit3, ChevronLeft, Play, Square, Coffee, Sun, Moon, Monitor, ChevronDown } from 'lucide-react';
+import { useDropzone } from 'react-dropzone'
 
 const MiniPomodoroTimer = ({ pomodoro, onReset }) => {
   const { timeLeft, duration, mode } = pomodoro;
@@ -499,6 +500,120 @@ function App() {
       };
     });
   };
+
+  function ImportDropzone() {
+    const onDrop = useCallback((acceptedFiles) => {
+      acceptedFiles.forEach((file) => {
+        const reader = new FileReader()
+
+        reader.onabort = () => console.log('file reading was aborted')
+        reader.onerror = () => console.log('file reading has failed')
+        reader.onload = () => {
+          const binaryStr = reader.result
+          importAllToDB(binaryStr)
+        }
+        reader.readAsArrayBuffer(file)
+      })
+
+    }, [])
+    const { getRootProps, getInputProps } = useDropzone({ onDrop })
+
+    return (
+      <div {...getRootProps()}>
+        <input {...getInputProps()} />
+        <p>Drag 'n' drop some files here, or click to select files</p>
+      </div>
+    )
+  }
+
+  // import all tasks, settings, and planner data from JSON
+  const importAllToDB = (json) => {
+    if (!db) return;
+    try {
+      const data = JSON.parse(json);
+      if (data.tasks && Array.isArray(data.tasks)) {
+        data.tasks.forEach(task => saveTaskToDB(task, 'tasks'));
+        setTasks(data.tasks);
+      }
+      if (data.archived && Array.isArray(data.archived)) {
+        data.archived.forEach(task => saveTaskToDB(task, 'archived'));
+        setArchivedTasks(data.archived);
+      }
+      if (data.settings && typeof data.settings === 'object') {
+        Object.entries(data.settings).forEach(([key, value]) => saveSetting(key, value));
+        loadSettings(db); // Reload settings to update state
+      }
+      if (data.plannerBlocks && Array.isArray(data.plannerBlocks)) {
+        data.plannerBlocks.forEach(block => savePlannerBlockToDB(block));
+        setPlannerBlocks(data.plannerBlocks);
+      }
+      if (data.plannerSettings && typeof data.plannerSettings === 'object') {
+        Object.entries(data.plannerSettings).forEach(([key, value]) => {
+          if (key === 'workTime') {
+            savePlannerSettingsToDB(value);
+            setWorkSettings(value);
+          }
+        });
+      }
+      alert('Import successful!');
+    } catch (error) {
+      console.error('Error importing data:', error);
+      alert('Error importing data. Check console for details.');
+    }
+  }
+
+  const exportAllFromDB = () => {
+    if (!db) return;
+    const exportData = {};
+    const transaction = db.transaction(['tasks', 'archived', 'settings', 'plannerBlocks', 'plannerSettings'], 'readonly');
+    const taskStore = transaction.objectStore('tasks');
+    const archivedStore = transaction.objectStore('archived');
+    const settingsStore = transaction.objectStore('settings');
+    const plannerBlocksStore = transaction.objectStore('plannerBlocks');
+    const plannerSettingsStore = transaction.objectStore('plannerSettings');
+    const taskRequest = taskStore.getAll();
+    const archivedRequest = archivedStore.getAll();
+    const settingsRequest = settingsStore.getAll();
+    const plannerBlocksRequest = plannerBlocksStore.getAll();
+    const plannerSettingsRequest = plannerSettingsStore.getAll();
+
+    taskRequest.onsuccess = () => {
+      exportData.tasks = taskRequest.result || [];
+    };
+
+    archivedRequest.onsuccess = () => {
+      exportData.archived = archivedRequest.result || [];
+    };
+
+    settingsRequest.onsuccess = () => {
+      exportData.settings = {};
+      (settingsRequest.result || []).forEach(item => {
+        exportData.settings[item.id] = item.value;
+      });
+    };
+
+    plannerBlocksRequest.onsuccess = () => {
+      exportData.plannerBlocks = plannerBlocksRequest.result || [];
+    };
+
+    plannerSettingsRequest.onsuccess = () => {
+      exportData.plannerSettings = {};
+      (plannerSettingsRequest.result || []).forEach(item => {
+        exportData.plannerSettings[item.id] = item.value;
+      });
+    };
+
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'task_manager_export.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   // Save task to IndexedDB
   const saveTaskToDB = (task, storeName = 'tasks') => {
@@ -2065,6 +2180,13 @@ function App() {
                   <p className="text-xs text-light-text-muted dark:text-dark-text-muted mt-1">
                     This will permanently delete all your tasks, archives, and settings. This action cannot be undone.
                   </p>
+                  <button
+                    onClick={exportAllFromDB}
+                    className="w-full px-4 py-3 rounded-xl text-light-danger dark:text-dark-danger shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark active:shadow-neumorphic-inset active:dark:shadow-neumorphic-inset-dark transition-all"
+                  >
+                    Export
+                  </button>
+                  <ImportDropzone />
                 </div>
               </div>
 
