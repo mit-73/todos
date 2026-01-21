@@ -68,11 +68,11 @@ const Sidebar = ({
                         </button>
                     </div>
                     <button
-                            onClick={() => setShowSettings(true)}
-                            className="p-4 rounded-lg transition-all duration-150 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"
-                        >
-                            <Settings size={20} />
-                        </button>
+                        onClick={() => setShowSettings(true)}
+                        className="p-4 rounded-lg transition-all duration-150 shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark"
+                    >
+                        <Settings size={20} />
+                    </button>
                 </div>
 
                 {/* Time Range Filter (moved from widget to sidebar for better layout control potentially, but keeping logic close) */}

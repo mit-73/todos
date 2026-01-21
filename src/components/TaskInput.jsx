@@ -7,6 +7,8 @@ const TaskInput = ({ onAddTask, allTags, isDisabled }) => {
     const [isImportant, setIsImportant] = useState(false);
     const [isUrgent, setIsUrgent] = useState(false);
     const [recurrence, setRecurrence] = useState('none');
+    const [valueScore, setValueScore] = useState(null);
+    const [effortScore, setEffortScore] = useState(null);
     const [tagSuggestions, setTagSuggestions] = useState([]);
     const [showTagSuggestions, setShowTagSuggestions] = useState(false);
     const [highlightedTagIndex, setHighlightedTagIndex] = useState(0);
@@ -126,18 +128,67 @@ const TaskInput = ({ onAddTask, allTags, isDisabled }) => {
                 pinned: pinMode,
                 urgency: isUrgent,
                 importance: isImportant,
-                recurrence: recurrence
+                recurrence: recurrence,
+                value: valueScore,
+                effort: effortScore
             });
             setInputValue('');
             setPinMode('none');
             setIsUrgent(false);
             setIsImportant(false);
             setRecurrence('none');
+            setValueScore(null);
+            setEffortScore(null);
         }
     };
 
     return (
         <div className="mt-6 pt-4 border-t border-light-text/10 dark:border-dark-text/10">
+            <div className="mb-3 flex flex-wrap justify-start items-center gap-2">
+                <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={valueScore ?? ''}
+                    onChange={(e) => {
+                        const next = e.target.value === '' ? null : Math.max(1, Math.min(10, parseInt(e.target.value, 10)));
+                        setValueScore(Number.isNaN(next) ? null : next);
+                    }}
+                    className="w-16 px-2 py-0.5 text-xs rounded-lg bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none"
+                    placeholder="Value"
+                />
+                <span className="text-light-text-muted dark:text-dark-text-muted">|</span>
+                <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={effortScore ?? ''}
+                    onChange={(e) => {
+                        const next = e.target.value === '' ? null : Math.max(1, Math.min(10, parseInt(e.target.value, 10)));
+                        setEffortScore(Number.isNaN(next) ? null : next);
+                    }}
+                    className="w-16 px-2 py-0.5 text-xs rounded-lg bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text shadow-neumorphic-inset dark:shadow-neumorphic-inset-dark focus:outline-none"
+                    placeholder="Effort"
+                />
+                {(valueScore !== null || effortScore !== null) && (
+                    <span
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs rounded-full bg-light-surface dark:bg-dark-surface text-light-text-muted dark:text-dark-text-muted shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark"
+                        title={valueScore !== null && effortScore !== null && effortScore !== 0 ? `Value/Effort = ${(valueScore / effortScore).toFixed(2)}` : 'Заполните оба поля'}
+                    >
+                        =&gt; {valueScore !== null && effortScore !== null && effortScore !== 0
+                            ? (valueScore / effortScore).toFixed(2)
+                            : '—'}
+                        <button
+                            onClick={() => { setValueScore(null); setEffortScore(null); }}
+                            className="-mr-1 p-0.5 rounded-full hover:bg-light-bg/70 dark:hover:bg-dark-bg/70 transition-colors"
+                            title="Сбросить оба"
+                            aria-label="Сбросить значения ценности и усилия"
+                        >
+                            <X size={10} />
+                        </button>
+                    </span>
+                )}
+            </div>
             <div className="relative">
                 {showTagSuggestions && tagSuggestions.length > 0 && (
                     <div ref={suggestionsRef} className="absolute bottom-full mb-2 w-full bg-light-surface dark:bg-dark-surface rounded-lg shadow-neumorphic-outset dark:shadow-neumorphic-outset-dark z-10 max-h-48 overflow-y-auto">
@@ -172,14 +223,14 @@ const TaskInput = ({ onAddTask, allTags, isDisabled }) => {
                 <button
                     onClick={submitTask}
                     disabled={!inputValue.trim()}
-                    className={`absolute right-3 bottom-3 p-2 rounded-lg transition-all duration-150 ${inputValue.trim() ?
+                    className={`absolute right-2 bottom-3 p-2 rounded-lg transition-all duration-150 ${inputValue.trim() ?
                         'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark active:shadow-neumorphic-inset-sm active:dark:shadow-neumorphic-inset-sm-dark text-light-primary' :
                         'text-light-text-muted dark:text-dark-text-muted cursor-not-allowed'}`}
                 >
                     <Send size={20} />
                 </button>
             </div>
-            <div className="mt-3 flex justify-center items-center gap-4">
+            <div className="mt-2 mb-4 flex justify-center items-center gap-4">
                 <button onClick={() => setPinMode('none')} title="Pin: None" className={`p-2 rounded-full transition-all duration-150 ${pinMode === 'none' ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-light-primary' : 'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'}`}>
                     <PinOff size={16} />
                 </button>
@@ -198,24 +249,24 @@ const TaskInput = ({ onAddTask, allTags, isDisabled }) => {
                 </button>
                 <div className="border-l h-6 border-light-text/20 dark:border-dark-text/20 mx-2"></div>
                 <div className="relative group">
-                     <button title={`Recurrence: ${recurrence}`} className={`p-2 rounded-full transition-all duration-150 ${recurrence !== 'none' ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-blue-500' : 'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'}`}>
-                         {recurrence === 'none' && <Repeat size={16} />}
-                         {recurrence === 'daily' && <span className="text-xs font-bold">1d</span>}
-                         {recurrence === 'weekly' && <span className="text-xs font-bold">1w</span>}
-                         {recurrence === 'monthly' && <span className="text-xs font-bold">1m</span>}
-                         {recurrence === 'yearly' && <span className="text-xs font-bold">1y</span>}
-                     </button>
-                     <select 
-                         value={recurrence}
-                         onChange={(e) => setRecurrence(e.target.value)}
-                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                     >
-                         <option value="none">No Recurrence</option>
-                         <option value="daily">Daily</option>
-                         <option value="weekly">Weekly</option>
-                         <option value="monthly">Monthly</option>
-                         <option value="yearly">Yearly</option>
-                     </select>
+                    <button title={`Recurrence: ${recurrence}`} className={`p-2 rounded-full transition-all duration-150 ${recurrence !== 'none' ? 'shadow-neumorphic-inset-sm dark:shadow-neumorphic-inset-sm-dark text-blue-500' : 'shadow-neumorphic-outset-sm dark:shadow-neumorphic-outset-sm-dark'}`}>
+                        {recurrence === 'none' && <Repeat size={16} />}
+                        {recurrence === 'daily' && <span className="text-xs font-bold">1d</span>}
+                        {recurrence === 'weekly' && <span className="text-xs font-bold">1w</span>}
+                        {recurrence === 'monthly' && <span className="text-xs font-bold">1m</span>}
+                        {recurrence === 'yearly' && <span className="text-xs font-bold">1y</span>}
+                    </button>
+                    <select
+                        value={recurrence}
+                        onChange={(e) => setRecurrence(e.target.value)}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    >
+                        <option value="none">No Recurrence</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
                 </div>
             </div>
             <div className="text-xs text-light-text-muted dark:text-dark-text-muted mt-2 text-center">

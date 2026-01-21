@@ -84,6 +84,8 @@ function App() {
       urgency: taskData.urgency,
       importance: taskData.importance,
       recurrence: taskData.recurrence || 'none', // none, daily, weekly, monthly, yearly
+      value: taskData.value,
+      effort: taskData.effort,
       createdAt: today.toISOString(),
       dueDate: dueDate
     };
@@ -230,6 +232,19 @@ function App() {
     if (!aPinned && bPinned) return 1;
     if (a.pinned === 'global' && b.pinned === 'local') return -1;
     if (a.pinned === 'local' && b.pinned === 'global') return 1;
+
+    // Within same pin level, sort by Value/Effort index
+    const aHasScores = (a.value !== undefined && a.value !== null) && (a.effort !== undefined && a.effort !== null);
+    const bHasScores = (b.value !== undefined && b.value !== null) && (b.effort !== undefined && b.effort !== null);
+    
+    if (aHasScores && !bHasScores) return -1;
+    if (!aHasScores && bHasScores) return 1;
+    
+    if (aHasScores && bHasScores) {
+        const idxA = a.value / a.effort;
+        const idxB = b.value / b.effort;
+        return idxB - idxA;
+    }
 
     return 0;
   }), [filteredTasks]);

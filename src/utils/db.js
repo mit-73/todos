@@ -1,5 +1,5 @@
 export const DB_NAME = 'TaskManager';
-export const DB_VERSION = 8;
+export const DB_VERSION = 9;
 
 export const openDB = () => {
   return new Promise((resolve, reject) => {
@@ -33,6 +33,8 @@ export const openDB = () => {
       if (!taskStore.indexNames.contains('dueDate')) taskStore.createIndex('dueDate', 'dueDate', { unique: false });
       if (!taskStore.indexNames.contains('importance')) taskStore.createIndex('importance', 'importance', { unique: false });
       if (!taskStore.indexNames.contains('urgency')) taskStore.createIndex('urgency', 'urgency', { unique: false });
+      if (!taskStore.indexNames.contains('value')) taskStore.createIndex('value', 'value', { unique: false });
+      if (!taskStore.indexNames.contains('effort')) taskStore.createIndex('effort', 'effort', { unique: false });
 
       // Create archived store if it doesn't exist
       if (!dbHandle.objectStoreNames.contains('archived')) dbHandle.createObjectStore('archived', { keyPath: 'id' });

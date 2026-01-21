@@ -18,11 +18,32 @@ const MatrixView = ({
 }) => {
 
     const matrixTasks = useMemo(() => {
+        const sortByValueEffort = (taskList) => {
+            return [...taskList].sort((t1, t2) => {
+                const t1HasScores = (t1.value !== undefined && t1.value !== null) && (t1.effort !== undefined && t1.effort !== null);
+                const t2HasScores = (t2.value !== undefined && t2.value !== null) && (t2.effort !== undefined && t2.effort !== null);
+                
+                // Tasks with scores come first
+                if (t1HasScores && !t2HasScores) return -1;
+                if (!t1HasScores && t2HasScores) return 1;
+                
+                // Both have scores: sort by index (Value/Effort) descending
+                if (t1HasScores && t2HasScores) {
+                    const idx1 = t1.value / t1.effort;
+                    const idx2 = t2.value / t2.effort;
+                    return idx2 - idx1;
+                }
+                
+                // Neither has scores: keep original order
+                return 0;
+            });
+        };
+
         return {
-            doTasks: tasks.filter(t => t.importance && t.urgency),
-            scheduleTasks: tasks.filter(t => t.importance && !t.urgency),
-            delegateTasks: tasks.filter(t => !t.importance && t.urgency),
-            eliminateTasks: tasks.filter(t => !t.importance && !t.urgency),
+            doTasks: sortByValueEffort(tasks.filter(t => t.importance && t.urgency)),
+            scheduleTasks: sortByValueEffort(tasks.filter(t => t.importance && !t.urgency)),
+            delegateTasks: sortByValueEffort(tasks.filter(t => !t.importance && t.urgency)),
+            eliminateTasks: sortByValueEffort(tasks.filter(t => !t.importance && !t.urgency)),
         };
     }, [tasks]);
 
@@ -106,6 +127,7 @@ const MatrixView = ({
                                                             onToggleImportance={onToggleImportance}
                                                             onToggleUrgency={onToggleUrgency}
                                                             onUpdatePinMode={onUpdatePinMode}
+                                                            onUpdateTask={onUpdateTask}
                                                             nsfwTagList={nsfwTagList}
                                                             locale={locale}
                                                             onTagClick={onTagClick}
